@@ -724,13 +724,25 @@
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('Browser does not support camera/mic API.');
         if (window.isSecureContext === false) throw new Error('Live call needs HTTPS.');
 
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-          video: { facingMode: { ideal: state.callFacingMode }, width: { ideal: 1280 }, height: { ideal: 720 } }
-        });
+        const videoConstraints = {
+          facingMode: { ideal: state.callFacingMode },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        };
+
+        let stream;
+        try {
+          // Preferred: camera + mic
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: videoConstraints });
+        } catch (err) {
+          // Fallback: camera only (if mic denied/unavailable)
+          stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: videoConstraints });
+          setCallStatus('Mic unavailable/denied. Continuing with video only.');
+        }
+
         state.callLocalStream = stream;
         localCallVideo.srcObject = stream;
-        await localCallVideo.play();
+        await localCallVideo.play().catch(() => {});
         return stream;
       }
 
@@ -841,7 +853,8 @@
           outgoingSignal.value = JSON.stringify(buildSignalPayload('offer', pc), null, 2);
           setCallStatus('Offer generated. Send this to second device.');
         } catch (err) {
-          setCallStatus('Failed to create offer.');
+          const msg = err && err.message ? err.message : 'Unknown error';
+          setCallStatus('Offer creation failed: ' + msg);
         }
       }
 
@@ -864,8 +877,9 @@
 
           outgoingSignal.value = JSON.stringify(buildSignalPayload('answer', pc), null, 2);
           setCallStatus('Answer generated. Send this back to caller.');
-        } catch (_) {
-          setCallStatus('Failed to create answer. Check pasted JSON.');
+        } catch (err) {
+          const msg = err && err.message ? err.message : 'Unknown error';
+          setCallStatus('Answer creation failed: ' + msg);
         }
       }
 
@@ -896,8 +910,9 @@
           }
 
           setCallStatus('Invalid signal JSON.');
-        } catch (_) {
-          setCallStatus('Could not apply signal. Check JSON.');
+        } catch (err) {
+          const msg = err && err.message ? err.message : 'Unknown error';
+          setCallStatus('Apply failed: ' + msg);
         }
       }
 
