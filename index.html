@@ -334,6 +334,7 @@
         callLocalStream: null,
         callPeer: null,
         callRemoteStream: null,
+        callIceCandidates: [],
       };
 
       // Screens
@@ -754,8 +755,12 @@
 
       function createPeer() {
         cleanupPeer();
+        state.callIceCandidates = [];
+
         const pc = new RTCPeerConnection({
-          iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }]
+          iceServers: [
+            { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
+          ],
         });
         state.callPeer = pc;
 
@@ -764,14 +769,21 @@
         remoteCallVideo.srcObject = remoteStream;
 
         pc.ontrack = (ev) => {
-          ev.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
+          ev.streams[0].getTracks().forEach((track) => remoteStream.addTrack(track));
+        };
+
+        pc.onicecandidate = (ev) => {
+          if (ev.candidate) {
+            state.callIceCandidates.push(ev.candidate.toJSON());
+          }
         };
 
         pc.onconnectionstatechange = () => {
           const s = pc.connectionState;
           if (s === 'connected') setCallStatus('Call connected ✓');
           else if (s === 'connecting') setCallStatus('Connecting...', true);
-          else if (s === 'disconnected' || s === 'failed') setCallStatus('Call disconnected');
+          else if (s === 'disconnected') setCallStatus('Connection lost. Reconnect with new offer.');
+          else if (s === 'failed') setCallStatus('Connection failed. Try same network or regenerate offer.');
         };
 
         return pc;
@@ -779,11 +791,11 @@
 
       async function waitIceDone(pc) {
         if (pc.iceGatheringState === 'complete') return;
-        await new Promise(resolve => {
+        await new Promise((resolve) => {
           const t = setTimeout(() => {
             pc.removeEventListener('icegatheringstatechange', onChange);
             resolve();
-          }, 2000);
+          }, 8000);
           function onChange() {
             if (pc.iceGatheringState === 'complete') {
               clearTimeout(t);
@@ -795,19 +807,39 @@
         });
       }
 
+      async function applyCandidates(pc, candidates) {
+        if (!pc || !Array.isArray(candidates) || !candidates.length) return;
+        for (const c of candidates) {
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate(c));
+          } catch (_) {
+            // ignore incompatible candidate lines
+          }
+        }
+      }
+
+      function buildSignalPayload(type, pc) {
+        return {
+          type,
+          sdp: pc && pc.localDescription ? pc.localDescription.sdp : '',
+          candidates: Array.isArray(state.callIceCandidates) ? state.callIceCandidates : [],
+          generatedAt: new Date().toISOString(),
+        };
+      }
+
       async function createOfferFlow() {
         try {
           setCallStatus('Preparing offer...', true);
           const stream = await ensureCallLocalStream();
           const pc = createPeer();
-          stream.getTracks().forEach(track => pc.addTrack(track, stream));
+          stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
-          const offer = await pc.createOffer();
+          const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
           await pc.setLocalDescription(offer);
           await waitIceDone(pc);
 
-          outgoingSignal.value = JSON.stringify({ type: 'offer', sdp: pc.localDescription.sdp }, null, 2);
-          setCallStatus('Offer generated. Send to other person.');
+          outgoingSignal.value = JSON.stringify(buildSignalPayload('offer', pc), null, 2);
+          setCallStatus('Offer generated. Send this to second device.');
         } catch (err) {
           setCallStatus('Failed to create offer.');
         }
@@ -821,15 +853,17 @@
           setCallStatus('Preparing answer...', true);
           const stream = await ensureCallLocalStream();
           const pc = createPeer();
-          stream.getTracks().forEach(track => pc.addTrack(track, stream));
+          stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
           await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: parsed.sdp }));
+          await applyCandidates(pc, parsed.candidates);
+
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
           await waitIceDone(pc);
 
-          outgoingSignal.value = JSON.stringify({ type: 'answer', sdp: pc.localDescription.sdp }, null, 2);
-          setCallStatus('Answer generated. Send to caller.');
+          outgoingSignal.value = JSON.stringify(buildSignalPayload('answer', pc), null, 2);
+          setCallStatus('Answer generated. Send this back to caller.');
         } catch (_) {
           setCallStatus('Failed to create answer. Check pasted JSON.');
         }
@@ -842,21 +876,22 @@
 
           if (parsed.type === 'answer' && parsed.sdp) {
             await state.callPeer.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: parsed.sdp }));
+            await applyCandidates(state.callPeer, parsed.candidates);
             setCallStatus('Answer applied. Connecting...', true);
             return;
           }
 
           if (parsed.type === 'offer' && parsed.sdp) {
-            // Optional recovery flow
             const stream = await ensureCallLocalStream();
             const pc = state.callPeer;
-            if (!pc.getSenders().length) stream.getTracks().forEach(track => pc.addTrack(track, stream));
+            if (!pc.getSenders().length) stream.getTracks().forEach((track) => pc.addTrack(track, stream));
             await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: parsed.sdp }));
+            await applyCandidates(pc, parsed.candidates);
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
             await waitIceDone(pc);
-            outgoingSignal.value = JSON.stringify({ type: 'answer', sdp: pc.localDescription.sdp }, null, 2);
-            setCallStatus('Offer applied. Answer generated.');
+            outgoingSignal.value = JSON.stringify(buildSignalPayload('answer', pc), null, 2);
+            setCallStatus('Offer applied. Share generated answer now.');
             return;
           }
 
@@ -870,7 +905,18 @@
         try {
           state.callFacingMode = state.callFacingMode === 'user' ? 'environment' : 'user';
           stopCallLocal();
-          await ensureCallLocalStream();
+          const stream = await ensureCallLocalStream();
+
+          if (state.callPeer) {
+            const newVideoTrack = stream.getVideoTracks()[0];
+            if (newVideoTrack) {
+              const sender = state.callPeer.getSenders().find((s) => s.track && s.track.kind === 'video');
+              if (sender) {
+                await sender.replaceTrack(newVideoTrack);
+              }
+            }
+          }
+
           setCallStatus(state.callFacingMode === 'user' ? 'Front camera selected.' : 'Rear camera selected.');
         } catch (_) {
           setCallStatus('Could not switch camera.');
