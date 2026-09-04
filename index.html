@@ -12,13 +12,58 @@
     body {
       min-height: 100vh;
       min-height: 100dvh;
-      background: radial-gradient(1200px 700px at 50% -200px, #11315f 0%, #06080d 55%, #020306 100%);
+      background: radial-gradient(1200px 700px at 50% -200px, #1a3a72 0%, #050811 52%, #010204 100%);
       color: #e7eef8;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
       padding-top: env(safe-area-inset-top);
       padding-right: env(safe-area-inset-right);
       padding-bottom: env(safe-area-inset-bottom);
       padding-left: env(safe-area-inset-left);
+      overflow-x: hidden;
+    }
+    .app-shell {
+      min-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    }
+    .ambient-bg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
+      overflow: hidden;
+    }
+    .ambient-orb {
+      position: absolute;
+      border-radius: 9999px;
+      filter: blur(50px);
+      opacity: 0.22;
+      animation: drift 14s ease-in-out infinite;
+    }
+    .orb-a {
+      width: 280px;
+      height: 280px;
+      background: #0ea5e9;
+      top: -90px;
+      left: -70px;
+    }
+    .orb-b {
+      width: 360px;
+      height: 360px;
+      background: #1d4ed8;
+      right: -110px;
+      top: 18%;
+      animation-delay: -4s;
+    }
+    .orb-c {
+      width: 260px;
+      height: 260px;
+      background: #0f172a;
+      left: 35%;
+      bottom: -120px;
+      animation-delay: -8s;
+    }
+    @keyframes drift {
+      0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+      50% { transform: translate3d(0, -18px, 0) scale(1.06); }
     }
     .glass {
       background: linear-gradient(145deg, rgba(11, 20, 36, 0.86), rgba(6, 13, 25, 0.7));
@@ -35,9 +80,17 @@
       border: 1px solid rgba(118, 169, 255, 0.24);
       box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03), 0 25px 70px rgba(0, 0, 0, 0.6);
       aspect-ratio: 3 / 4;
-      max-height: min(72vh, 680px);
+      max-height: min(72vh, 720px);
       width: 100%;
       transition: box-shadow 240ms ease;
+      touch-action: none;
+    }
+    .preview-shell::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(148, 210, 255, 0.1), transparent 35%, transparent 70%, rgba(148, 210, 255, 0.06));
+      pointer-events: none;
     }
     .preview-shell:focus-within {
       box-shadow: inset 0 0 0 1px rgba(131, 214, 255, 0.2), 0 0 0 3px rgba(34, 211, 238, 0.28), 0 25px 70px rgba(0, 0, 0, 0.6);
@@ -108,6 +161,112 @@
       border-color: rgba(78, 220, 255, 0.95);
       background: rgba(12, 53, 84, 0.85);
     }
+    .studio-title {
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #6ee7ff;
+      text-shadow: 0 0 22px rgba(34, 211, 238, 0.35);
+    }
+    .live-dot {
+      box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.7);
+      animation: pulseDot 1.6s ease-out infinite;
+    }
+    @keyframes pulseDot {
+      0% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.7); }
+      100% { box-shadow: 0 0 0 12px rgba(248, 113, 113, 0); }
+    }
+    .hero-glow {
+      box-shadow: 0 18px 46px rgba(2, 132, 199, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      margin-bottom: 0.9rem;
+      padding: 0.75rem 0.8rem;
+      border-radius: 1rem;
+      background: rgba(7, 13, 23, 0.78);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(131, 166, 238, 0.2);
+    }
+    #captureBtn {
+      min-width: 88px;
+      min-height: 88px;
+      border-radius: 9999px;
+      font-weight: 700;
+      box-shadow: 0 14px 30px rgba(0, 170, 255, 0.25), inset 0 2px 10px rgba(255, 255, 255, 0.14);
+      transition: transform 180ms ease, box-shadow 180ms ease;
+    }
+    #captureBtn:active {
+      transform: scale(0.95);
+      box-shadow: 0 8px 18px rgba(0, 170, 255, 0.2), inset 0 2px 10px rgba(255, 255, 255, 0.14);
+    }
+    #captureControls {
+      border-radius: 1.2rem;
+    }
+    #sidePanels {
+      border-radius: 1.2rem;
+    }
+    #permissionPanel {
+      border-radius: 1rem;
+    }
+    @media (max-width: 1023px) {
+      main {
+        padding-bottom: calc(17.5rem + env(safe-area-inset-bottom));
+      }
+      #cameraColumn {
+        padding-bottom: 0.6rem;
+      }
+      .preview-shell {
+        aspect-ratio: 9 / 16;
+        max-height: min(70dvh, 760px);
+      }
+      #captureControls {
+        position: fixed;
+        left: 0.75rem;
+        right: 0.75rem;
+        bottom: calc(env(safe-area-inset-bottom) + 0.6rem);
+        z-index: 35;
+        background: linear-gradient(180deg, rgba(6, 10, 18, 0.88), rgba(4, 8, 14, 0.95));
+        border: 1px solid rgba(106, 160, 246, 0.28);
+        box-shadow: 0 -6px 34px rgba(0, 0, 0, 0.5);
+        animation: dockRise 320ms ease;
+      }
+      #sidePanels {
+        position: fixed;
+        left: 0.75rem;
+        right: 0.75rem;
+        bottom: calc(env(safe-area-inset-bottom) + 0.65rem);
+        z-index: 45;
+        max-height: 62dvh;
+        overflow: auto;
+        padding: 0.5rem;
+        border-radius: 1rem;
+        background: rgba(5, 10, 17, 0.92);
+        border: 1px solid rgba(106, 160, 246, 0.3);
+        box-shadow: 0 14px 44px rgba(0, 0, 0, 0.52);
+      }
+      #sidePanels.show-panel {
+        display: block;
+      }
+    }
+    @media (min-width: 1024px) {
+      #captureControls {
+        position: static;
+      }
+      #captureBtn {
+        min-width: 74px;
+        min-height: 74px;
+      }
+      #sidePanels.show-panel {
+        display: block;
+      }
+    }
+    @keyframes dockRise {
+      0% { transform: translateY(14px); opacity: 0.7; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
     .visually-hidden {
       position: absolute;
       width: 1px;
@@ -135,13 +294,110 @@
       outline: 2px solid #22d3ee;
       outline-offset: 2px;
     }
+    .minimal-header {
+      display: none;
+    }
+    .top-overlay {
+      position: absolute;
+      left: 0.75rem;
+      right: 0.75rem;
+      top: 0.75rem;
+      z-index: 8;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+    .overlay-chip {
+      border: 1px solid rgba(127, 164, 235, 0.4);
+      background: rgba(2, 8, 20, 0.56);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      color: #dbe9ff;
+      border-radius: 9999px;
+      padding: 0.4rem 0.7rem;
+      font-size: 0.72rem;
+      line-height: 1;
+    }
+    .camera-dock {
+      padding-top: 0.55rem;
+    }
+    .mode-pill {
+      width: fit-content;
+      margin: 0 auto;
+      border: 1px solid rgba(124, 165, 243, 0.35);
+      background: rgba(4, 11, 24, 0.7);
+      border-radius: 9999px;
+      padding: 0.2rem;
+      display: flex;
+      gap: 0.2rem;
+    }
+    .mode-pill button {
+      border-radius: 9999px;
+      padding: 0.38rem 0.95rem;
+      font-size: 0.78rem;
+      border: 1px solid transparent;
+      color: #e8f2ff;
+    }
+    .mode-pill button.toggle-active {
+      background: rgba(7, 64, 101, 0.8);
+      border-color: rgba(99, 227, 255, 0.75);
+    }
+    .zoom-preset:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .camera-main-actions {
+      margin-top: 0.7rem;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 0.55rem;
+    }
+    .mini-action {
+      min-height: 44px;
+      border-radius: 9999px;
+      font-size: 0.78rem;
+    }
+    .capture-action-row {
+      margin-top: 0.65rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.45rem;
+    }
+    .upload-state-pill {
+      position: absolute;
+      bottom: 3.55rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 7;
+      border-radius: 9999px;
+      border: 1px solid rgba(124, 165, 243, 0.35);
+      background: rgba(1, 7, 16, 0.65);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      padding: 0.35rem 0.7rem;
+      font-size: 0.72rem;
+      color: #dceaff;
+    }
+    #recordingBadge {
+      top: 3.2rem;
+    }
+    @media (min-width: 1024px) {
+      .minimal-header {
+        display: flex;
+      }
+      .top-overlay {
+        top: 0.95rem;
+      }
+    }
   </style>
 </head>
 <body class="text-slate-100">
-  <main class="mx-auto w-full max-w-6xl px-4 py-5 sm:px-6 sm:py-6">
+  <main class="mx-auto w-full max-w-7xl px-3 py-4 sm:px-5 sm:py-5">
     <section id="lockScreen" class="mx-auto max-w-md pt-8 sm:pt-14" aria-labelledby="lockTitle">
-      <div class="glass rounded-2xl p-6 sm:p-7">
-        <p class="text-cyan-300/90 text-sm tracking-wide">Camera Studio Pro</p>
+      <div class="glass hero-glow rounded-3xl p-6 sm:p-7">
+        <p class="studio-title text-sm">Camera Studio Pro</p>
         <h1 id="lockTitle" class="mt-2 text-3xl font-semibold tracking-tight text-white">Secure Studio Access</h1>
         <p class="mt-3 text-sm text-slate-300">Enter your entry PIN to start camera and microphone access.</p>
         <form id="pinForm" class="mt-6" novalidate>
@@ -154,29 +410,38 @@
       </div>
     </section>
 
-    <section id="studioApp" class="hidden" aria-label="Camera Studio">
-      <header class="mb-4 flex items-center justify-between gap-3">
+    <section id="studioApp" class="app-shell hidden" aria-label="Camera Studio">
+      <header class="app-header minimal-header items-center justify-between gap-3">
         <div>
-          <p class="text-xs uppercase tracking-[0.16em] text-cyan-300/90">Camera Studio Pro</p>
+          <p class="studio-title text-xs">Camera Studio Pro</p>
           <h2 class="text-xl font-semibold text-white sm:text-2xl">Capture</h2>
         </div>
         <div class="flex items-center gap-2">
           <span id="onlineBadge" class="rounded-lg border border-emerald-300/25 bg-emerald-500/15 px-3 py-1 text-xs text-emerald-200">Online</span>
-          <button id="lockAgainBtn" class="control-btn rounded-lg px-3 py-1.5 text-sm" type="button">Lock</button>
+          <button id="lockAgainHeaderBtn" class="control-btn rounded-lg px-3 py-1.5 text-sm" type="button">Lock</button>
         </div>
       </header>
 
-      <div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <section aria-label="Camera Preview and Controls">
+      <div class="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <section id="cameraColumn" aria-label="Camera Preview and Controls">
           <div id="previewShell" class="preview-shell" tabindex="0" role="button" aria-label="Camera preview. Tap to focus animation.">
+            <div class="top-overlay">
+              <button id="lockAgainBtn" class="overlay-chip" type="button">Lock</button>
+              <div class="flex items-center gap-2">
+                <span id="cameraStatusBadge" class="overlay-chip">Cam Off</span>
+                <span id="micStatusBadge" class="overlay-chip">Mic Off</span>
+                <button id="openStudioPanelBtn" type="button" class="overlay-chip" aria-expanded="false">Tools</button>
+              </div>
+            </div>
             <video id="liveVideo" autoplay playsinline muted class="h-full w-full object-cover"></video>
             <img id="photoPreview" alt="Captured photo preview" class="hidden h-full w-full object-cover" />
             <video id="capturedVideo" playsinline controls class="hidden h-full w-full object-cover bg-black"></video>
             <canvas id="captureCanvas" class="hidden"></canvas>
             <div id="gridOverlay" class="grid-overlay"></div>
+            <div id="uploadStatePill" class="upload-state-pill">Ready</div>
             <div id="timerOverlay" class="absolute inset-0 hidden items-center justify-center bg-black/40 text-7xl font-bold text-cyan-200"></div>
             <div id="recordingBadge" class="absolute left-3 top-3 hidden items-center gap-2 rounded-full bg-black/60 px-3 py-1 text-xs text-red-100">
-              <span class="h-2.5 w-2.5 rounded-full bg-red-500"></span>
+              <span class="live-dot h-2.5 w-2.5 rounded-full bg-red-500"></span>
               <span id="recordingTime">00:00</span>
             </div>
             <div id="focusRing" class="focus-ring" aria-hidden="true"></div>
@@ -192,21 +457,34 @@
             </div>
           </div>
 
-          <div class="glass mt-4 rounded-2xl p-3 sm:p-4">
-            <div class="grid grid-cols-3 gap-2 sm:gap-3" role="group" aria-label="Capture mode and trigger">
-              <button id="modePhoto" type="button" class="control-btn toggle-active rounded-xl px-3 py-2 text-sm" aria-pressed="true">Photo</button>
-              <button id="modeVideo" type="button" class="control-btn rounded-xl px-3 py-2 text-sm" aria-pressed="false">Video</button>
-              <button id="captureBtn" type="button" class="rounded-xl bg-cyan-500 px-3 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400">Capture</button>
+          <div id="captureControls" class="glass camera-dock mt-4 rounded-2xl p-3 sm:p-4">
+            <div class="mode-pill" role="group" aria-label="Capture mode selector">
+              <button id="modePhoto" type="button" class="control-btn toggle-active" aria-pressed="true">PHOTO</button>
+              <button id="modeVideo" type="button" class="control-btn" aria-pressed="false">VIDEO</button>
             </div>
 
-            <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div class="camera-main-actions" role="group" aria-label="Primary camera actions">
+              <button id="galleryQuickBtn" type="button" class="control-btn mini-action px-4">Gallery</button>
+              <button id="captureBtn" type="button" class="rounded-full bg-cyan-500 px-3 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400">Shoot</button>
+              <button id="switchCameraBtn" type="button" class="control-btn mini-action px-4">Switch</button>
+            </div>
+
+            <div id="captureActions" class="capture-action-row hidden">
               <button id="retakeBtn" type="button" class="control-btn rounded-xl px-3 py-2 text-sm" disabled>Retake</button>
-              <button id="uploadBtn" type="button" class="control-btn rounded-xl px-3 py-2 text-sm" disabled>Upload</button>
-              <button id="switchCameraBtn" type="button" class="control-btn rounded-xl px-3 py-2 text-sm">Switch Cam</button>
-              <button id="gridBtn" type="button" class="control-btn rounded-xl px-3 py-2 text-sm" aria-pressed="false">Grid</button>
+              <button id="uploadBtn" type="button" class="control-btn rounded-xl px-3 py-2 text-sm" disabled>Use & Upload</button>
             </div>
 
-            <div class="mt-4 space-y-3">
+            <div class="mt-2 grid grid-cols-2 gap-2">
+              <button id="toggleAdvancedBtn" type="button" class="control-btn rounded-xl px-3 py-2 text-sm" aria-expanded="false">More Controls</button>
+              <button id="showStatsBtn" type="button" class="control-btn rounded-xl px-3 py-2 text-sm">Activity</button>
+            </div>
+
+            <div id="advancedControls" class="mt-4 hidden space-y-3 border-t border-slate-700/60 pt-3">
+              <div class="grid grid-cols-3 gap-2">
+                <button id="gridBtn" type="button" class="control-btn rounded-xl px-3 py-2 text-sm" aria-pressed="false">Grid</button>
+                <button id="studioMicBtn" type="button" class="control-btn rounded-xl px-3 py-2 text-sm" aria-pressed="false">Mic Off</button>
+                <button id="torchBtn" type="button" class="control-btn rounded-xl px-3 py-2 text-sm" disabled aria-pressed="false">Torch</button>
+              </div>
               <div>
                 <label for="filterSelect" class="text-xs text-slate-300">Filter</label>
                 <select id="filterSelect" class="mt-1 w-full rounded-xl border border-slate-500/40 bg-black/35 px-3 py-2 text-sm">
@@ -227,23 +505,47 @@
                 </select>
               </div>
 
-              <div id="zoomWrap" class="hidden">
-                <label for="zoomRange" class="text-xs text-slate-300">Zoom</label>
-                <input id="zoomRange" type="range" min="1" max="1" step="0.1" value="1" class="mt-1 w-full" />
+              <div>
+                <label for="aspectRatioSelect" class="text-xs text-slate-300">Aspect Ratio</label>
+                <select id="aspectRatioSelect" class="mt-1 w-full rounded-xl border border-slate-500/40 bg-black/35 px-3 py-2 text-sm"></select>
               </div>
 
-              <div class="flex items-center justify-between gap-2">
-                <button id="studioMicBtn" type="button" class="control-btn rounded-xl px-3 py-2 text-sm" aria-pressed="false">Mic Off</button>
-                <button id="torchBtn" type="button" class="control-btn rounded-xl px-3 py-2 text-sm" disabled aria-pressed="false">Torch</button>
-                <div class="h-2 w-full overflow-hidden rounded-full bg-slate-800/80" aria-hidden="true">
-                  <div id="uploadProgressBar" class="h-full w-0 bg-cyan-400 transition-all duration-300"></div>
+              <div>
+                <label for="photoQualitySelect" class="text-xs text-slate-300">Photo Quality</label>
+                <select id="photoQualitySelect" class="mt-1 w-full rounded-xl border border-slate-500/40 bg-black/35 px-3 py-2 text-sm">
+                  <option value="standard">Standard</option>
+                  <option value="high" selected>High</option>
+                  <option value="maximum">Maximum</option>
+                </select>
+              </div>
+
+              <div id="videoQualityWrap" class="hidden">
+                <label for="videoQualitySelect" class="text-xs text-slate-300">Video Quality</label>
+                <select id="videoQualitySelect" class="mt-1 w-full rounded-xl border border-slate-500/40 bg-black/35 px-3 py-2 text-sm"></select>
+              </div>
+
+              <div id="zoomWrap" class="hidden">
+                <label for="zoomRange" class="text-xs text-slate-300">Zoom</label>
+                <div id="zoomPresetWrap" class="mt-1 grid grid-cols-4 gap-1.5">
+                  <button type="button" class="control-btn zoom-preset rounded-lg px-2 py-1.5 text-xs" data-zoom="0.5">0.5x</button>
+                  <button type="button" class="control-btn zoom-preset toggle-active rounded-lg px-2 py-1.5 text-xs" data-zoom="1">1x</button>
+                  <button type="button" class="control-btn zoom-preset rounded-lg px-2 py-1.5 text-xs" data-zoom="2">2x</button>
+                  <button type="button" class="control-btn zoom-preset rounded-lg px-2 py-1.5 text-xs" data-zoom="3">3x</button>
                 </div>
+                <input id="zoomRange" type="range" min="1" max="1" step="0.1" value="1" class="mt-1 w-full" />
+              </div>
+              <div class="h-2 w-full overflow-hidden rounded-full bg-slate-800/80" aria-hidden="true">
+                <div id="uploadProgressBar" class="h-full w-0 bg-cyan-400 transition-all duration-300"></div>
               </div>
             </div>
           </div>
         </section>
 
-        <aside class="space-y-4" aria-label="Studio Side Panels">
+        <aside id="sidePanels" class="hidden space-y-3" aria-label="Studio Side Panels" aria-hidden="true">
+          <div class="flex items-center justify-between rounded-xl border border-slate-700/60 bg-black/25 px-3 py-2 text-sm">
+            <span>Studio Tools</span>
+            <button id="closeStudioPanelBtn" type="button" class="control-btn rounded-lg px-3 py-1.5">Close</button>
+          </div>
           <div class="glass rounded-2xl p-3">
             <div class="mb-3 flex items-center gap-2" role="tablist" aria-label="Studio tools tabs">
               <button id="tabStats" class="control-btn toggle-active flex-1 rounded-lg px-3 py-2 text-sm" role="tab" aria-selected="true">Upload Stats</button>
@@ -338,10 +640,17 @@
         micTrack: null,
         cameraEnabled: false,
         micEnabled: false,
+        advancedOpen: false,
+        studioPanelOpen: false,
+        uploadState: "ready",
         usingFrontCamera: false,
         selectedMode: "photo",
         selectedFilter: "natural",
         selectedTimer: 0,
+        selectedAspectRatio: "4:3",
+        selectedPhotoQuality: "high",
+        selectedVideoQuality: "best",
+        supportedVideoQualities: ["best"],
         gridOn: false,
         mediaRecorder: null,
         recordingChunks: [],
@@ -354,6 +663,11 @@
         cameraInitRequested: false,
         torchOn: false,
         zoomSupported: false,
+        zoomMin: 1,
+        zoomMax: 1,
+        zoomStep: 0.1,
+        pinchStartDistance: 0,
+        pinchStartZoom: 1,
         torchSupported: false,
         timerIntervalId: null,
         sessionId: "",
@@ -383,6 +697,9 @@
         previewStatus: document.getElementById("previewStatus"),
         recordingBadge: document.getElementById("recordingBadge"),
         recordingTime: document.getElementById("recordingTime"),
+        uploadStatePill: document.getElementById("uploadStatePill"),
+        cameraStatusBadge: document.getElementById("cameraStatusBadge"),
+        micStatusBadge: document.getElementById("micStatusBadge"),
         timerOverlay: document.getElementById("timerOverlay"),
         focusRing: document.getElementById("focusRing"),
         shutterFlash: document.getElementById("shutterFlash"),
@@ -391,13 +708,25 @@
         modePhoto: document.getElementById("modePhoto"),
         modeVideo: document.getElementById("modeVideo"),
         captureBtn: document.getElementById("captureBtn"),
+        captureActions: document.getElementById("captureActions"),
+        galleryQuickBtn: document.getElementById("galleryQuickBtn"),
+        toggleAdvancedBtn: document.getElementById("toggleAdvancedBtn"),
+        advancedControls: document.getElementById("advancedControls"),
+        openStudioPanelBtn: document.getElementById("openStudioPanelBtn"),
+        closeStudioPanelBtn: document.getElementById("closeStudioPanelBtn"),
+        showStatsBtn: document.getElementById("showStatsBtn"),
         retakeBtn: document.getElementById("retakeBtn"),
         uploadBtn: document.getElementById("uploadBtn"),
         switchCameraBtn: document.getElementById("switchCameraBtn"),
         gridBtn: document.getElementById("gridBtn"),
         filterSelect: document.getElementById("filterSelect"),
         timerSelect: document.getElementById("timerSelect"),
+        aspectRatioSelect: document.getElementById("aspectRatioSelect"),
+        photoQualitySelect: document.getElementById("photoQualitySelect"),
+        videoQualityWrap: document.getElementById("videoQualityWrap"),
+        videoQualitySelect: document.getElementById("videoQualitySelect"),
         zoomWrap: document.getElementById("zoomWrap"),
+        zoomPresetWrap: document.getElementById("zoomPresetWrap"),
         zoomRange: document.getElementById("zoomRange"),
         studioMicBtn: document.getElementById("studioMicBtn"),
         torchBtn: document.getElementById("torchBtn"),
@@ -405,6 +734,7 @@
         uploadMessage: document.getElementById("uploadMessage"),
         onlineBadge: document.getElementById("onlineBadge"),
         lockAgainBtn: document.getElementById("lockAgainBtn"),
+        lockAgainHeaderBtn: document.getElementById("lockAgainHeaderBtn"),
         tabStats: document.getElementById("tabStats"),
         tabCall: document.getElementById("tabCall"),
         statsPanel: document.getElementById("statsPanel"),
@@ -536,6 +866,8 @@
         state.unlocked = true;
         els.lockScreen.classList.add("hidden");
         els.studioApp.classList.remove("hidden");
+        toggleAdvancedControls(false);
+        setStudioPanel(false);
         safeSetText(els.previewStatus, "Studio unlocked. Tap Enable Camera to request permission.", "status-warn");
         updatePermissionPanel();
         loadStats();
@@ -549,16 +881,22 @@
         removeCaptureAnotherButton();
         setUploadProgress(0);
         safeSetText(els.uploadMessage, "Capture a photo or video to upload.", "");
+        setUploadState("ready");
         state.unlocked = false;
         state.cameraInitRequested = false;
         state.cameraEnabled = false;
         state.micEnabled = false;
+        state.advancedOpen = false;
+        state.studioPanelOpen = false;
         sessionStorage.removeItem(STORAGE_KEYS.unlockSession);
         els.pinInput.value = "";
         els.lockScreen.classList.remove("hidden");
         els.studioApp.classList.add("hidden");
         updatePermissionPanel();
         updateStudioMicButton();
+        setDeviceStatus();
+        toggleAdvancedControls(false);
+        setStudioPanel(false);
       }
 
       function updatePermissionPanel() {
@@ -574,6 +912,70 @@
         els.studioMicBtn.setAttribute("aria-pressed", String(active));
         els.studioMicBtn.classList.toggle("toggle-active", active);
         els.studioMicBtn.textContent = active ? "Mic On" : "Mic Off";
+        setDeviceStatus();
+      }
+
+      function setDeviceStatus() {
+        if (els.cameraStatusBadge) {
+          els.cameraStatusBadge.textContent = state.cameraEnabled ? "Cam On" : "Cam Off";
+        }
+        if (els.micStatusBadge) {
+          const micLive = !!(state.micTrack && state.micTrack.enabled);
+          els.micStatusBadge.textContent = micLive ? "Mic On" : "Mic Off";
+        }
+      }
+
+      function setUploadState(nextState) {
+        state.uploadState = nextState;
+        if (!els.uploadStatePill) return;
+        if (nextState === "uploading") {
+          els.uploadStatePill.textContent = "Uploading";
+        } else if (nextState === "verifying") {
+          els.uploadStatePill.textContent = "Verifying";
+        } else if (nextState === "uploaded") {
+          els.uploadStatePill.textContent = "Uploaded";
+        } else if (nextState === "failed") {
+          els.uploadStatePill.textContent = "Failed";
+        } else {
+          els.uploadStatePill.textContent = "Ready";
+        }
+      }
+
+      function toggleAdvancedControls(forceOpen) {
+        const next = typeof forceOpen === "boolean" ? forceOpen : !state.advancedOpen;
+        state.advancedOpen = next;
+        if (els.advancedControls) {
+          els.advancedControls.classList.toggle("hidden", !next);
+        }
+        if (els.toggleAdvancedBtn) {
+          els.toggleAdvancedBtn.setAttribute("aria-expanded", String(next));
+          els.toggleAdvancedBtn.classList.toggle("toggle-active", next);
+        }
+      }
+
+      function setStudioPanel(open) {
+        state.studioPanelOpen = !!open;
+        if (!els.sidePanels) return;
+        els.sidePanels.classList.toggle("hidden", !state.studioPanelOpen);
+        els.sidePanels.classList.toggle("show-panel", state.studioPanelOpen);
+        els.sidePanels.setAttribute("aria-hidden", state.studioPanelOpen ? "false" : "true");
+        if (els.openStudioPanelBtn) {
+          els.openStudioPanelBtn.setAttribute("aria-expanded", state.studioPanelOpen ? "true" : "false");
+        }
+      }
+
+      function openActivityPanel() {
+        setStudioPanel(true);
+        switchTab("stats");
+      }
+
+      function openQuickGallery() {
+        if (state.captureReady) {
+          safeSetText(els.previewStatus, "Preview ready. Use Retake or Use and Upload.", "status-ok");
+          return;
+        }
+        openActivityPanel();
+        safeSetText(els.uploadMessage, "No recent capture yet. Shoot something first.", "status-warn");
       }
 
       function cameraFilterCss(filterName) {
@@ -619,14 +1021,7 @@
         stopMainStream();
 
         const wantsAudio = !!withAudio;
-        const constraintsWithAudio = {
-          audio: wantsAudio,
-          video: {
-            facingMode: state.usingFrontCamera ? "user" : "environment",
-            width: { ideal: 1920 },
-            height: { ideal: 1080 }
-          }
-        };
+        const constraintsWithAudio = buildVideoConstraints(wantsAudio);
 
         try {
           const stream = await navigator.mediaDevices.getUserMedia(constraintsWithAudio);
@@ -641,6 +1036,7 @@
           state.cameraEnabled = !!state.cameraTrack;
           updatePermissionPanel();
           updateStudioMicButton();
+          setDeviceStatus();
           refreshCaptureUi();
         } catch (err) {
           if (wantsAudio) {
@@ -651,19 +1047,13 @@
             safeSetText(els.previewStatus, message, "status-error");
             state.cameraEnabled = false;
             updatePermissionPanel();
+            setDeviceStatus();
           }
         }
       }
 
       async function fallbackCameraOnly(originalError) {
-        const constraints = {
-          audio: false,
-          video: {
-            facingMode: state.usingFrontCamera ? "user" : "environment",
-            width: { ideal: 1920 },
-            height: { ideal: 1080 }
-          }
-        };
+        const constraints = buildVideoConstraints(false);
         try {
           const stream = await navigator.mediaDevices.getUserMedia(constraints);
           attachMainStream(stream);
@@ -671,6 +1061,7 @@
           state.micEnabled = false;
           updatePermissionPanel();
           updateStudioMicButton();
+          setDeviceStatus();
           refreshCaptureUi();
           if (originalError && originalError.name === "NotAllowedError") {
             safeSetText(els.previewStatus, "Microphone permission denied. Camera-only mode enabled.", "status-warn");
@@ -708,6 +1099,7 @@
         state.cameraEnabled = false;
         updatePermissionPanel();
         updateStudioMicButton();
+        setDeviceStatus();
       }
 
       async function enableCameraOnly() {
@@ -752,33 +1144,58 @@
         state.zoomSupported = false;
         state.torchSupported = false;
         state.torchOn = false;
+        state.zoomMin = 1;
+        state.zoomMax = 1;
+        state.zoomStep = 0.1;
         els.zoomWrap.classList.add("hidden");
         els.torchBtn.disabled = true;
         els.torchBtn.setAttribute("aria-pressed", "false");
 
         if (!state.cameraTrack || typeof state.cameraTrack.getCapabilities !== "function") {
+          updateVideoQualityOptions(null);
+          applyPreviewAspectRatio();
           return;
         }
         const caps = state.cameraTrack.getCapabilities();
+        updateVideoQualityOptions(caps);
         if (caps.zoom) {
           state.zoomSupported = true;
+          state.zoomMin = Number(caps.zoom.min || 1);
+          state.zoomMax = Number(caps.zoom.max || 1);
+          state.zoomStep = Number(caps.zoom.step || 0.1);
           els.zoomWrap.classList.remove("hidden");
-          els.zoomRange.min = String(caps.zoom.min || 1);
-          els.zoomRange.max = String(caps.zoom.max || 1);
-          els.zoomRange.step = String(caps.zoom.step || 0.1);
+          els.zoomRange.min = String(state.zoomMin);
+          els.zoomRange.max = String(state.zoomMax);
+          els.zoomRange.step = String(state.zoomStep);
           const settings = state.cameraTrack.getSettings ? state.cameraTrack.getSettings() : {};
-          els.zoomRange.value = String(settings.zoom || caps.zoom.min || 1);
+          const currentZoom = Number(settings.zoom || state.zoomMin || 1);
+          syncZoomUi(currentZoom);
+          if (els.zoomPresetWrap) {
+            const buttons = els.zoomPresetWrap.querySelectorAll("button[data-zoom]");
+            buttons.forEach(function (btn) {
+              const preset = Number(btn.getAttribute("data-zoom"));
+              btn.disabled = preset < state.zoomMin || preset > state.zoomMax;
+            });
+          }
+        } else if (els.zoomPresetWrap) {
+          const buttons = els.zoomPresetWrap.querySelectorAll("button[data-zoom]");
+          buttons.forEach(function (btn) {
+            btn.disabled = true;
+          });
         }
         if (caps.torch) {
           state.torchSupported = true;
           els.torchBtn.disabled = false;
         }
+        applyPreviewAspectRatio();
       }
 
       async function setZoom(value) {
         if (!state.cameraTrack || !state.zoomSupported) return;
+        const clamped = Math.max(state.zoomMin, Math.min(state.zoomMax, Number(value)));
         try {
-          await state.cameraTrack.applyConstraints({ advanced: [{ zoom: Number(value) }] });
+          await state.cameraTrack.applyConstraints({ advanced: [{ zoom: clamped }] });
+          syncZoomUi(clamped);
         } catch (err) {
           logDev("zoom failed", err);
         }
@@ -820,6 +1237,14 @@
         if (state.mediaRecorder && state.mediaRecorder.state === "recording") {
           stopRecording(false);
         }
+        updateAspectRatioOptions();
+        if (els.videoQualityWrap) {
+          els.videoQualityWrap.classList.toggle("hidden", mode !== "video");
+        }
+        if (state.cameraEnabled) {
+          initCamera(state.micEnabled);
+        }
+        refreshCaptureUi();
         safeSetText(els.previewStatus, mode === "photo" ? "Photo mode ready." : "Video mode ready.", "status-ok");
       }
 
@@ -834,6 +1259,162 @@
         state.selectedTimer = Number(seconds) || 0;
       }
 
+      function getOrientationFromSize(width, height) {
+        return height >= width ? "portrait" : "landscape";
+      }
+
+      function ratioValueForMode(mode, ratioKey, orientation) {
+        if (ratioKey === "1:1") return 1;
+        if (ratioKey === "full") {
+          if (state.cameraTrack && state.cameraTrack.getSettings) {
+            const s = state.cameraTrack.getSettings();
+            if (s.width && s.height) {
+              return s.width / s.height;
+            }
+          }
+          return orientation === "portrait" ? 9 / 16 : 16 / 9;
+        }
+        if (mode === "video") {
+          if (ratioKey === "9:16") return orientation === "portrait" ? 9 / 16 : 16 / 9;
+          return orientation === "portrait" ? 9 / 16 : 16 / 9;
+        }
+        if (ratioKey === "16:9") return orientation === "portrait" ? 9 / 16 : 16 / 9;
+        return orientation === "portrait" ? 3 / 4 : 4 / 3;
+      }
+
+      function applyPreviewAspectRatio() {
+        const liveW = els.liveVideo.videoWidth || 1080;
+        const liveH = els.liveVideo.videoHeight || 1920;
+        const orientation = getOrientationFromSize(liveW, liveH);
+        const ratio = ratioValueForMode(state.selectedMode, state.selectedAspectRatio, orientation);
+        els.previewShell.style.aspectRatio = String(ratio);
+      }
+
+      function updateAspectRatioOptions() {
+        if (!els.aspectRatioSelect) return;
+        const options = state.selectedMode === "video"
+          ? [{ value: "16:9", label: "16:9" }, { value: "9:16", label: "9:16" }]
+          : [
+              { value: "full", label: "FULL" },
+              { value: "4:3", label: "4:3" },
+              { value: "16:9", label: "16:9" },
+              { value: "1:1", label: "1:1" }
+            ];
+
+        const allowed = options.map(function (opt) { return opt.value; });
+        if (allowed.indexOf(state.selectedAspectRatio) === -1) {
+          state.selectedAspectRatio = state.selectedMode === "video" ? "16:9" : "4:3";
+        }
+
+        els.aspectRatioSelect.innerHTML = "";
+        options.forEach(function (opt) {
+          const option = document.createElement("option");
+          option.value = opt.value;
+          option.textContent = opt.label;
+          els.aspectRatioSelect.appendChild(option);
+        });
+        els.aspectRatioSelect.value = state.selectedAspectRatio;
+        applyPreviewAspectRatio();
+      }
+
+      function getPreferredSizeFromQuality(mode, quality, orientation) {
+        if (mode === "video") {
+          if (quality === "720p") {
+            return orientation === "portrait" ? { width: 720, height: 1280 } : { width: 1280, height: 720 };
+          }
+          if (quality === "1080p") {
+            return orientation === "portrait" ? { width: 1080, height: 1920 } : { width: 1920, height: 1080 };
+          }
+          return orientation === "portrait" ? { width: 1080, height: 1920 } : { width: 1920, height: 1080 };
+        }
+        if (quality === "standard") {
+          return orientation === "portrait" ? { width: 960, height: 1280 } : { width: 1280, height: 960 };
+        }
+        if (quality === "maximum") {
+          return orientation === "portrait" ? { width: 2160, height: 3840 } : { width: 3840, height: 2160 };
+        }
+        return orientation === "portrait" ? { width: 1080, height: 1920 } : { width: 1920, height: 1080 };
+      }
+
+      function buildVideoConstraints(withAudio) {
+        const orientation = state.selectedMode === "video" && state.selectedAspectRatio === "16:9" ? "landscape" : "portrait";
+        const quality = state.selectedMode === "video" ? state.selectedVideoQuality : state.selectedPhotoQuality;
+        const size = getPreferredSizeFromQuality(state.selectedMode === "video" ? "video" : "photo", quality, orientation);
+        const ratio = ratioValueForMode(state.selectedMode, state.selectedAspectRatio, orientation);
+        return {
+          audio: !!withAudio,
+          video: {
+            facingMode: state.usingFrontCamera ? "user" : "environment",
+            width: { ideal: size.width },
+            height: { ideal: size.height },
+            aspectRatio: ratio
+          }
+        };
+      }
+
+      function updateVideoQualityOptions(caps) {
+        if (!els.videoQualitySelect || !els.videoQualityWrap) return;
+        const maxHeight = caps && caps.height && caps.height.max ? Number(caps.height.max) : 0;
+        const supported = ["best"];
+        if (maxHeight >= 720) supported.unshift("720p");
+        if (maxHeight >= 1080) supported.splice(1, 0, "1080p");
+        state.supportedVideoQualities = supported;
+
+        if (supported.indexOf(state.selectedVideoQuality) === -1) {
+          state.selectedVideoQuality = supported[supported.length - 1] || "best";
+        }
+
+        els.videoQualitySelect.innerHTML = "";
+        supported.forEach(function (q) {
+          const option = document.createElement("option");
+          option.value = q;
+          option.textContent = q === "best" ? "Best available" : q;
+          els.videoQualitySelect.appendChild(option);
+        });
+        els.videoQualitySelect.value = state.selectedVideoQuality;
+        els.videoQualityWrap.classList.toggle("hidden", state.selectedMode !== "video");
+      }
+
+      function getCropForAspect(srcW, srcH, targetRatio) {
+        const srcRatio = srcW / srcH;
+        if (Math.abs(srcRatio - targetRatio) < 0.01) {
+          return { sx: 0, sy: 0, sw: srcW, sh: srcH };
+        }
+        if (srcRatio > targetRatio) {
+          const sw = Math.round(srcH * targetRatio);
+          const sx = Math.round((srcW - sw) / 2);
+          return { sx: sx, sy: 0, sw: sw, sh: srcH };
+        }
+        const sh = Math.round(srcW / targetRatio);
+        const sy = Math.round((srcH - sh) / 2);
+        return { sx: 0, sy: sy, sw: srcW, sh: sh };
+      }
+
+      function syncZoomUi(value) {
+        if (!els.zoomRange) return;
+        els.zoomRange.value = String(value);
+        if (!els.zoomPresetWrap) return;
+        const buttons = els.zoomPresetWrap.querySelectorAll("button[data-zoom]");
+        let nearestBtn = null;
+        let nearestDiff = Infinity;
+        buttons.forEach(function (btn) {
+          const preset = Number(btn.getAttribute("data-zoom"));
+          const diff = Math.abs(preset - value);
+          if (diff < nearestDiff) {
+            nearestDiff = diff;
+            nearestBtn = btn;
+          }
+        });
+        buttons.forEach(function (btn) {
+          btn.classList.remove("toggle-active");
+          btn.setAttribute("aria-pressed", "false");
+        });
+        if (nearestBtn) {
+          nearestBtn.classList.add("toggle-active");
+          nearestBtn.setAttribute("aria-pressed", "true");
+        }
+      }
+
       function triggerFocusRing(event) {
         const rect = els.previewShell.getBoundingClientRect();
         const clientX = event.clientX || (event.touches && event.touches[0] ? event.touches[0].clientX : rect.left + rect.width / 2);
@@ -845,6 +1426,36 @@
         els.focusRing.classList.add("active");
       }
 
+      function getTouchDistance(touchA, touchB) {
+        const dx = touchA.clientX - touchB.clientX;
+        const dy = touchA.clientY - touchB.clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+      }
+
+      function handlePreviewTouchStart(event) {
+        if (!state.zoomSupported || event.touches.length < 2) {
+          return;
+        }
+        const distance = getTouchDistance(event.touches[0], event.touches[1]);
+        state.pinchStartDistance = distance;
+        state.pinchStartZoom = Number(els.zoomRange.value || 1);
+      }
+
+      function handlePreviewTouchMove(event) {
+        if (!state.zoomSupported || event.touches.length < 2 || !state.pinchStartDistance) {
+          return;
+        }
+        event.preventDefault();
+        const distance = getTouchDistance(event.touches[0], event.touches[1]);
+        const scale = distance / state.pinchStartDistance;
+        const proposed = state.pinchStartZoom * scale;
+        setZoom(proposed);
+      }
+
+      function handlePreviewTouchEnd() {
+        state.pinchStartDistance = 0;
+      }
+
       function playShutterFlash() {
         els.shutterFlash.classList.remove("flash");
         void els.shutterFlash.offsetWidth;
@@ -852,6 +1463,9 @@
       }
 
       async function beginCaptureFlow() {
+        if (state.studioPanelOpen) {
+          setStudioPanel(false);
+        }
         if (!state.stream || !state.cameraTrack) {
           safeSetText(els.previewStatus, "Camera is not ready. Please allow permissions first.", "status-error");
           return;
@@ -893,21 +1507,32 @@
         if (!state.stream || !state.cameraTrack) return;
         const video = els.liveVideo;
         const settings = state.cameraTrack.getSettings ? state.cameraTrack.getSettings() : {};
-        const width = settings.width || video.videoWidth || 1280;
-        const height = settings.height || video.videoHeight || 720;
+        const srcWidth = settings.width || video.videoWidth || 1280;
+        const srcHeight = settings.height || video.videoHeight || 720;
+        const orientation = getOrientationFromSize(srcWidth, srcHeight);
+        const targetRatio = ratioValueForMode("photo", state.selectedAspectRatio, orientation);
+        const crop = state.selectedAspectRatio === "full"
+          ? { sx: 0, sy: 0, sw: srcWidth, sh: srcHeight }
+          : getCropForAspect(srcWidth, srcHeight, targetRatio);
 
-        els.captureCanvas.width = width;
-        els.captureCanvas.height = height;
+        const maxDims = getPreferredSizeFromQuality("photo", state.selectedPhotoQuality, orientation);
+        const scale = Math.min(1, maxDims.width / crop.sw, maxDims.height / crop.sh);
+        const outW = Math.max(320, Math.round(crop.sw * scale));
+        const outH = Math.max(320, Math.round(crop.sh * scale));
+
+        els.captureCanvas.width = outW;
+        els.captureCanvas.height = outH;
         const ctx = els.captureCanvas.getContext("2d");
         if (!ctx) {
           safeSetText(els.previewStatus, "Photo capture is unsupported on this browser.", "status-error");
           return;
         }
         ctx.filter = cameraFilterCss(state.selectedFilter);
-        ctx.drawImage(video, 0, 0, width, height);
+        ctx.drawImage(video, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, outW, outH);
         playShutterFlash();
 
-        let quality = getAdaptivePhotoQuality();
+        const baseQuality = state.selectedPhotoQuality === "standard" ? 0.78 : state.selectedPhotoQuality === "maximum" ? 0.96 : 0.88;
+        let quality = Math.min(baseQuality, getAdaptivePhotoQuality());
         let dataUrl = els.captureCanvas.toDataURL("image/jpeg", quality);
         while (dataUrl.length * 0.75 > CONFIG.maxPhotoBytes && quality > 0.5) {
           quality -= 0.07;
@@ -934,6 +1559,7 @@
         els.capturedVideo.classList.add("hidden");
         state.captureReady = true;
         refreshCaptureUi();
+        setUploadState("ready");
         safeSetText(els.previewStatus, "Photo captured. Review and upload.", "status-ok");
       }
 
@@ -972,9 +1598,10 @@
 
         state.recordingChunks = [];
         state.recordingSeconds = 0;
+        const videoBitrate = state.selectedVideoQuality === "720p" ? 2500000 : state.selectedVideoQuality === "1080p" ? 4500000 : 5500000;
 
         try {
-          state.mediaRecorder = new MediaRecorder(state.stream, { mimeType: mimeType, videoBitsPerSecond: 3500000 });
+          state.mediaRecorder = new MediaRecorder(state.stream, { mimeType: mimeType, videoBitsPerSecond: videoBitrate });
         } catch (err) {
           safeSetText(els.previewStatus, "Could not start video recording.", "status-error");
           logDev("mediaRecorder error", err);
@@ -1028,6 +1655,7 @@
 
           state.captureReady = true;
           refreshCaptureUi();
+          setUploadState("ready");
           safeSetText(els.previewStatus, "Video captured. Review and upload.", "status-ok");
         };
 
@@ -1045,7 +1673,8 @@
 
         els.recordingTime.textContent = "00:00";
         els.recordingBadge.classList.remove("hidden");
-        safeSetText(els.previewStatus, "Recording... tap Capture to stop.", "status-warn");
+        refreshCaptureUi();
+        safeSetText(els.previewStatus, "Recording... tap Stop to finish.", "status-warn");
       }
 
       function stopRecording(forceDiscard) {
@@ -1090,6 +1719,16 @@
         els.uploadBtn.disabled = !canUpload;
         els.retakeBtn.disabled = !state.captureReady || state.uploading;
         els.captureBtn.disabled = !canCapture;
+        if (els.captureActions) {
+          els.captureActions.classList.toggle("hidden", !state.captureReady);
+        }
+        if (els.captureBtn) {
+          if (state.selectedMode === "video" && state.mediaRecorder && state.mediaRecorder.state === "recording") {
+            els.captureBtn.textContent = "Stop";
+          } else {
+            els.captureBtn.textContent = state.selectedMode === "video" ? "Record" : "Shoot";
+          }
+        }
       }
 
       function showLivePreview() {
@@ -1105,6 +1744,7 @@
         els.capturedVideo.classList.add("hidden");
         els.liveVideo.classList.remove("hidden");
         refreshCaptureUi();
+        setUploadState("ready");
         safeSetText(els.previewStatus, "Live preview restored.", "status-ok");
       }
 
@@ -1150,6 +1790,7 @@
 
         state.uploading = true;
         refreshCaptureUi();
+        setUploadState("uploading");
         setUploadProgress(8);
         safeSetText(els.uploadMessage, "Uploading...", "status-warn");
 
@@ -1200,7 +1841,12 @@
                 break;
               }
             } catch (err) {
-              lastError = mapBackendError(err && err.message ? err.message : "Upload failed");
+              const rawMessage = err && err.message ? err.message : "Upload failed";
+              if (rawMessage === "Failed to fetch" || rawMessage.toLowerCase().includes("network") || rawMessage.toLowerCase().includes("fetch")) {
+                pendingVerification = true;
+                break;
+              }
+              lastError = mapBackendError(rawMessage);
               if (!isTemporaryUploadError(lastError) || attempt === CONFIG.maxUploadRetries) {
                 break;
               }
@@ -1210,6 +1856,7 @@
 
           if (verifiedSuccess) {
             setUploadProgress(100);
+            setUploadState("uploaded");
             safeSetText(els.uploadMessage, "Uploaded successfully", "status-ok");
             safeSetText(els.previewStatus, "Uploaded successfully", "status-ok");
             incrementLocalStats(true, state.captured.kind);
@@ -1217,10 +1864,12 @@
             loadStats();
           } else if (pendingVerification) {
             await submitUploadFormFallback(payload);
+            setUploadState("verifying");
             safeSetText(els.uploadMessage, "Verifying upload...", "status-warn");
             const verification = await verifyUploadAfterOpaque(payload);
             if (verification.ok) {
               setUploadProgress(100);
+              setUploadState("uploaded");
               safeSetText(els.uploadMessage, "Uploaded successfully", "status-ok");
               safeSetText(els.previewStatus, "Uploaded successfully", "status-ok");
               incrementLocalStats(true, state.captured.kind);
@@ -1228,19 +1877,37 @@
               loadStats();
             } else {
               setUploadProgress(100);
+              setUploadState("verifying");
               const extra = verification.error && verification.error !== "Upload not yet confirmed" ? " (" + mapBackendError(verification.error) + ")" : "";
               safeSetText(els.uploadMessage, "Upload request sent. Please verify the file in Google Drive." + extra, "status-warn");
               safeSetText(els.previewStatus, "Upload request sent, verification pending.", "status-warn");
             }
           } else {
-            setUploadProgress(0);
-            safeSetText(els.uploadMessage, lastError || "Upload failed. Please retry.", "status-error");
-            safeSetText(els.previewStatus, "Upload failed. You can retry without recapturing.", "status-error");
-            incrementLocalStats(false, null);
+            // Final fallback path for strict CORS/network behavior on Apps Script.
+            safeSetText(els.uploadMessage, "Retrying with compatibility upload...", "status-warn");
+            await submitUploadFormFallback(payload);
+            setUploadState("verifying");
+            const verification = await verifyUploadAfterOpaque(payload);
+            if (verification.ok) {
+              setUploadProgress(100);
+              setUploadState("uploaded");
+              safeSetText(els.uploadMessage, "Uploaded successfully", "status-ok");
+              safeSetText(els.previewStatus, "Uploaded successfully", "status-ok");
+              incrementLocalStats(true, state.captured.kind);
+              injectCaptureAnotherButton();
+              loadStats();
+            } else {
+              setUploadProgress(0);
+              setUploadState("failed");
+              safeSetText(els.uploadMessage, lastError || "Upload failed. Please retry.", "status-error");
+              safeSetText(els.previewStatus, "Upload failed. You can retry without recapturing.", "status-error");
+              incrementLocalStats(false, null);
+            }
           }
         } catch (err) {
           logDev("upload fatal", err);
           setUploadProgress(0);
+          setUploadState("failed");
           safeSetText(els.uploadMessage, "Upload failed. Please retry.", "status-error");
           incrementLocalStats(false, null);
         } finally {
@@ -1261,6 +1928,7 @@
           showLivePreview();
           removeCaptureAnotherButton();
           setUploadProgress(0);
+          setUploadState("ready");
         });
         els.uploadMessage.parentElement.appendChild(existing);
       }
@@ -1746,17 +2414,27 @@
       }
 
       function bindEvents() {
-        els.pinForm.addEventListener("submit", handlePinSubmit);
-        els.modePhoto.addEventListener("click", function () { switchMode("photo"); });
-        els.modeVideo.addEventListener("click", function () { switchMode("video"); });
-        els.gridBtn.addEventListener("click", function () { setGrid(!state.gridOn); });
-        els.captureBtn.addEventListener("click", beginCaptureFlow);
-        els.retakeBtn.addEventListener("click", showLivePreview);
-        els.uploadBtn.addEventListener("click", uploadCapture);
-        els.enableCameraBtn.addEventListener("click", enableCameraOnly);
-        els.enableMicBtn.addEventListener("click", enableMicrophone);
-        els.studioMicBtn.addEventListener("click", toggleStudioMic);
-        els.switchCameraBtn.addEventListener("click", async function () {
+        function on(el, eventName, handler) {
+          if (!el) return;
+          el.addEventListener(eventName, handler);
+        }
+
+        on(els.pinForm, "submit", handlePinSubmit);
+        on(els.modePhoto, "click", function () { switchMode("photo"); });
+        on(els.modeVideo, "click", function () { switchMode("video"); });
+        on(els.toggleAdvancedBtn, "click", function () { toggleAdvancedControls(); });
+        on(els.galleryQuickBtn, "click", openQuickGallery);
+        on(els.openStudioPanelBtn, "click", function () { setStudioPanel(true); });
+        on(els.closeStudioPanelBtn, "click", function () { setStudioPanel(false); });
+        on(els.showStatsBtn, "click", openActivityPanel);
+        on(els.gridBtn, "click", function () { setGrid(!state.gridOn); });
+        on(els.captureBtn, "click", beginCaptureFlow);
+        on(els.retakeBtn, "click", showLivePreview);
+        on(els.uploadBtn, "click", uploadCapture);
+        on(els.enableCameraBtn, "click", enableCameraOnly);
+        on(els.enableMicBtn, "click", enableMicrophone);
+        on(els.studioMicBtn, "click", toggleStudioMic);
+        on(els.switchCameraBtn, "click", async function () {
           if (!state.cameraEnabled) {
             safeSetText(els.previewStatus, "Enable camera first.", "status-warn");
             return;
@@ -1764,33 +2442,72 @@
           state.usingFrontCamera = !state.usingFrontCamera;
           await initCamera(state.micEnabled);
         });
-        els.filterSelect.addEventListener("change", function () {
+        on(els.filterSelect, "change", function () {
           state.selectedFilter = els.filterSelect.value;
           applyFilterToPreview();
         });
-        els.timerSelect.addEventListener("change", function () {
+        on(els.timerSelect, "change", function () {
           setTimer(els.timerSelect.value);
         });
-        els.zoomRange.addEventListener("input", function () {
+        on(els.aspectRatioSelect, "change", function () {
+          state.selectedAspectRatio = els.aspectRatioSelect.value;
+          applyPreviewAspectRatio();
+          if (state.cameraEnabled) {
+            initCamera(state.micEnabled);
+          }
+        });
+        on(els.photoQualitySelect, "change", function () {
+          state.selectedPhotoQuality = els.photoQualitySelect.value;
+          if (state.cameraEnabled && state.selectedMode === "photo") {
+            initCamera(state.micEnabled);
+          }
+        });
+        on(els.videoQualitySelect, "change", function () {
+          state.selectedVideoQuality = els.videoQualitySelect.value;
+          if (state.cameraEnabled && state.selectedMode === "video") {
+            initCamera(state.micEnabled);
+          }
+        });
+        on(els.zoomRange, "input", function () {
           setZoom(els.zoomRange.value);
         });
-        els.torchBtn.addEventListener("click", toggleTorch);
-        els.previewShell.addEventListener("pointerdown", triggerFocusRing);
-        els.tabStats.addEventListener("click", function () { switchTab("stats"); });
-        els.tabCall.addEventListener("click", function () { switchTab("call"); });
-        els.refreshStatsBtn.addEventListener("click", loadStats);
-        els.createOfferBtn.addEventListener("click", createOffer);
-        els.createAnswerBtn.addEventListener("click", createAnswerFromRemoteOffer);
-        els.applyIncomingBtn.addEventListener("click", applyIncomingSignal);
-        els.copySignalBtn.addEventListener("click", copySignalOut);
-        els.endCallBtn.addEventListener("click", stopCallSession);
-        els.reconnectCallBtn.addEventListener("click", reconnectCall);
-        els.toggleMuteBtn.addEventListener("click", toggleMute);
-        els.toggleCallCamBtn.addEventListener("click", toggleCallCamera);
-        els.lockAgainBtn.addEventListener("click", resetToLock);
+        if (els.zoomPresetWrap) {
+          els.zoomPresetWrap.querySelectorAll("button[data-zoom]").forEach(function (btn) {
+            on(btn, "click", function () {
+              setZoom(Number(btn.getAttribute("data-zoom")));
+            });
+          });
+        }
+        on(els.torchBtn, "click", toggleTorch);
+        on(els.previewShell, "pointerdown", triggerFocusRing);
+        on(els.liveVideo, "loadedmetadata", applyPreviewAspectRatio);
+        if (els.previewShell) {
+          els.previewShell.addEventListener("touchstart", handlePreviewTouchStart, { passive: true });
+          els.previewShell.addEventListener("touchmove", handlePreviewTouchMove, { passive: false });
+          els.previewShell.addEventListener("touchend", handlePreviewTouchEnd, { passive: true });
+          els.previewShell.addEventListener("touchcancel", handlePreviewTouchEnd, { passive: true });
+        }
+        on(els.tabStats, "click", function () { switchTab("stats"); });
+        on(els.tabCall, "click", function () { switchTab("call"); });
+        on(els.refreshStatsBtn, "click", loadStats);
+        on(els.createOfferBtn, "click", createOffer);
+        on(els.createAnswerBtn, "click", createAnswerFromRemoteOffer);
+        on(els.applyIncomingBtn, "click", applyIncomingSignal);
+        on(els.copySignalBtn, "click", copySignalOut);
+        on(els.endCallBtn, "click", stopCallSession);
+        on(els.reconnectCallBtn, "click", reconnectCall);
+        on(els.toggleMuteBtn, "click", toggleMute);
+        on(els.toggleCallCamBtn, "click", toggleCallCamera);
+        on(els.lockAgainBtn, "click", resetToLock);
+        on(els.lockAgainHeaderBtn, "click", resetToLock);
 
         window.addEventListener("online", setOnlineBadge);
         window.addEventListener("offline", setOnlineBadge);
+        document.addEventListener("keydown", function (event) {
+          if (event.key === "Escape") {
+            setStudioPanel(false);
+          }
+        });
 
         document.addEventListener("visibilitychange", function () {
           if (document.hidden) {
@@ -1816,8 +2533,17 @@
         setOnlineBadge();
         applyFilterToPreview();
         setGrid(false);
+        if (els.photoQualitySelect) {
+          els.photoQualitySelect.value = state.selectedPhotoQuality;
+        }
+        updateAspectRatioOptions();
+        updateVideoQualityOptions(null);
+        setUploadState("ready");
         updateStudioMicButton();
+        setDeviceStatus();
         updatePermissionPanel();
+        toggleAdvancedControls(false);
+        setStudioPanel(false);
         refreshCaptureUi();
         updatePinLockUi();
         setInterval(updatePinLockUi, 1000);
@@ -1833,8 +2559,15 @@
         }
       }
 
-      bindEvents();
-      bootstrap();
+      try {
+        bindEvents();
+        bootstrap();
+      } catch (err) {
+        if (els.pinMessage) {
+          safeSetText(els.pinMessage, "Startup error. Hard refresh and redeploy latest files.", "status-error");
+        }
+        logDev("startup error", err);
+      }
     })();
   </script>
 </body>
