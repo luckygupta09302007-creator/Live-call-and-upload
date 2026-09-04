@@ -348,18 +348,17 @@
 
   <canvas id="captureCanvas" class="hidden"></canvas>
 
-  <script>
-    (() => {
-      'use strict';
+ <script>
+  (() => {
+    'use strict';
 
-      const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyNiOaIy94dwP65WwHSSZCkgCCJss-33gBD2si2P8R9sDN8HvQiaiT_K0aZEGstzB3J/exec
-';
-      const APP_SECURITY_TOKEN = 'YOUR_REAL_SECRET_TOKEN';
-      // CHANGE THIS to your own 4-6 digit entry PIN and use the SAME value in Code.gs ENTRY_PIN.
-      const ENTRY_PIN = '0930';
-      const MAX_VIDEO_SECONDS = 20;
-      const ENTRY_PIN_REGEX = /^\d{4,6}$/;
-      const ENTRY_LOCK_KEY = 'studioEntryLockStateV1';
+    const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyNiOaIy94dwP65WwHSSZCkgCCJss-33gBD2si2P8R9sDN8HvQiaiT_K0aZEGstzB3J/exec';
+    const APP_SECURITY_TOKEN = 'apna-real-secret-token-yahan-dalo';
+    // CHANGE THIS to your own 4-6 digit entry PIN and use the SAME value in Code.gs ENTRY_PIN.
+    const ENTRY_PIN = '0930';
+    const MAX_VIDEO_SECONDS = 20;
+    const ENTRY_PIN_REGEX = /^\d{4,6}$/;
+    const ENTRY_LOCK_KEY = 'studioEntryLockStateV1';
 
       const FILTERS = [
         { name: 'Natural', css: 'none' },
