@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Camera Studio Pro</title>
+  <style>
+    :root {
+      --bg: #050814;
+      --panel: rgba(15, 23, 42, 0.78);
+      --text: #eef2ff;
+      --muted: #9ca3af;
+      --accent: #38bdf8;
+      --ok: #22c55e;
+      --danger: #fb7185;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(circle at top right, #0f1f36, var(--bg) 58%);
+      color: var(--text);
+    }
+    .app { width: 100%; height: 100%; display: grid; place-items: center; padding: 12px; }
+    .screen {
+      width: 100%; max-width: 560px; height: 100%; max-height: 980px;
+      border-radius: 24px; overflow: hidden; border: 1px solid rgba(255,255,255,.08);
+      background: rgba(2, 6, 23, .9); display: none; position: relative;
+      box-shadow: 0 20px 56px rgba(0, 0, 0, .42);
+    }
+    .screen.active { display: block; }
+
+    .welcome {
+      display: grid; align-content: center; gap: 14px; text-align: center; padding: 24px;
+      background: linear-gradient(165deg, rgba(15,23,42,.8), rgba(2,6,23,.96));
+    }
+    h1 { margin: 0; font-size: clamp(1.75rem, 5vw, 2.3rem); }
+    p { margin: 0; color: var(--muted); line-height: 1.55; }
+    .logo {
+      width: 76px; height: 76px; border-radius: 999px; margin: 0 auto;
+      background: radial-gradient(circle at 35% 35%, #67e8f9, #0ea5e9 60%, #0369a1);
+      display: grid; place-items: center; font-size: 30px;
+      box-shadow: 0 10px 28px rgba(14, 165, 233, 0.4);
+    }
+
+    .btn {
+      border: 0; border-radius: 14px; padding: 13px 16px; color: white; font-weight: 700;
+      background: linear-gradient(180deg, #38bdf8, #0284c7); cursor: pointer;
+      box-shadow: 0 10px 24px rgba(2, 132, 199, .34);
+    }
+    .btn.secondary {
+      color: var(--text); background: rgba(148,163,184,.14); border: 1px solid rgba(255,255,255,.14); box-shadow: none;
+    }
+    .btn.success {
+      background: linear-gradient(180deg, #4ade80, #16a34a); box-shadow: 0 10px 24px rgba(22, 163, 74, .35);
+    }
+    .btn:disabled { opacity: .55; cursor: not-allowed; }
+
+    .camera-wrap { position: relative; width: 100%; height: 100%; background: #000; }
+    video, .preview-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .top {
+      position: absolute; left: 0; right: 0; top: 0; z-index: 4;
+      padding: max(12px, env(safe-area-inset-top)) 12px 8px;
+      display: flex; justify-content: space-between; align-items: center;
+      background: linear-gradient(180deg, rgba(0,0,0,.64), rgba(0,0,0,0));
+    }
+    .chip {
+      border: 1px solid rgba(255,255,255,.18); background: rgba(15,23,42,.7);
+      border-radius: 999px; padding: 7px 11px; font-size: .82rem;
+    }
+    .icon-btn {
+      width: 42px; height: 42px; border-radius: 999px; border: 1px solid rgba(255,255,255,.2);
+      background: rgba(15,23,42,.66); color: white; cursor: pointer;
+    }
+
+    .bottom {
+      position: absolute; left: 0; right: 0; bottom: 0; z-index: 5;
+      padding: 10px 12px max(14px, env(safe-area-inset-bottom));
+      background: linear-gradient(0deg, rgba(0,0,0,.78), rgba(0,0,0,0));
+      display: grid; gap: 10px;
+    }
+    .row { display: flex; align-items: center; justify-content: center; gap: 10px; }
+
+    .seg {
+      display: inline-grid; grid-template-columns: 1fr 1fr; padding: 3px;
+      border-radius: 999px; background: rgba(15,23,42,.7); border: 1px solid rgba(255,255,255,.14);
+    }
+    .seg button {
+      border: 0; border-radius: 999px; background: transparent; color: #dbeafe; font-weight: 700;
+      font-size: .8rem; padding: 7px 12px; cursor: pointer;
+    }
+    .seg button.active { background: linear-gradient(180deg, #7dd3fc, #38bdf8); color: #082f49; }
+
+    .status {
+      min-height: 23px; text-align: center; font-size: .9rem; color: #d1d5db;
+      display: flex; gap: 8px; justify-content: center; align-items: center;
+    }
+    .loader {
+      width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(255,255,255,.25);
+      border-top-color: #fff; animation: spin .9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .shutter {
+      width: 92px; height: 92px; border-radius: 999px; border: 4px solid rgba(255,255,255,.95);
+      background: rgba(255,255,255,.16); box-shadow: inset 0 0 0 10px rgba(255,255,255,.14), 0 0 0 8px rgba(255,255,255,.12);
+    }
+    .record {
+      width: 92px; height: 92px; border-radius: 999px; border: 4px solid rgba(255,255,255,.95);
+      background: rgba(239,68,68,.2); box-shadow: inset 0 0 0 10px rgba(239,68,68,.56), 0 0 0 8px rgba(255,255,255,.12);
+    }
+    .record.active {
+      width: 86px; height: 86px; border-radius: 20px; box-shadow: inset 0 0 0 21px rgba(239,68,68,.82), 0 0 0 8px rgba(255,255,255,.12);
+    }
+
+    .filters {
+      position: absolute; top: calc(max(12px, env(safe-area-inset-top)) + 54px); left: 50%; transform: translateX(-50%);
+      z-index: 4; background: rgba(15,23,42,.68); border: 1px solid rgba(255,255,255,.14);
+      border-radius: 999px; padding: 6px 10px; font-size: .8rem;
+    }
+
+    .toast {
+      position: absolute; z-index: 6; top: calc(max(12px, env(safe-area-inset-top)) + 86px); left: 50%; transform: translateX(-50%);
+      width: min(92%, 420px); display: none; border-radius: 12px; padding: 10px 12px;
+      border: 1px solid rgba(255,255,255,.16); background: rgba(2, 6, 23, .85); font-size: .9rem;
+    }
+    .toast.error { border-color: rgba(251,113,133,.5); color: #ffe4e6; }
+    .toast.success { border-color: rgba(34,197,94,.5); color: #dcfce7; }
+
+    .overlay {
+      position: absolute; inset: 0; z-index: 7; background: linear-gradient(0deg, rgba(0,0,0,.82), rgba(0,0,0,.05));
+      display: none; align-content: end;
+    }
+    .overlay.active { display: grid; }
+    .overlay video, .overlay img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .overlay-actions { padding: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    .panel {
+      position: absolute; inset: 0; z-index: 8; display: none; place-items: center;
+      background: radial-gradient(circle at center, rgba(30,41,59,.32), rgba(2,6,23,.9)); padding: 16px;
+    }
+    .panel.active { display: grid; }
+    .card {
+      width: min(95%, 430px); border-radius: 18px; background: var(--panel);
+      border: 1px solid rgba(255,255,255,.15); padding: 16px; text-align: center;
+    }
+    .stack { display: grid; gap: 10px; margin-top: 12px; }
+
+    /* Live call */
+    .call-wrap { height: 100%; display: grid; grid-template-rows: auto 1fr auto; }
+    .call-head {
+      padding: max(12px, env(safe-area-inset-top)) 12px 10px;
+      display: flex; justify-content: space-between; align-items: center;
+      background: linear-gradient(180deg, rgba(0,0,0,.58), rgba(0,0,0,.08));
+    }
+    .call-body { padding: 10px; overflow: auto; display: grid; gap: 10px; }
+    .video-grid { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+    .pane {
+      border-radius: 14px; overflow: hidden; border: 1px solid rgba(255,255,255,.12);
+      background: rgba(2, 6, 23, .85);
+    }
+    .pane-label { padding: 8px; font-size: .8rem; color: #cbd5e1; }
+    .call-video { width: 100%; aspect-ratio: 9/13; object-fit: cover; background: #000; display: block; }
+
+    textarea {
+      width: 100%; min-height: 120px; resize: vertical; border-radius: 12px; border: 1px solid rgba(255,255,255,.14);
+      background: rgba(15,23,42,.68); color: #e2e8f0; padding: 10px; font-size: .83rem;
+    }
+    .call-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .small { font-size: .82rem; color: #9fb1c8; }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section id="welcomeScreen" class="screen welcome active">
+      <div class="logo">📸</div>
+      <h1>Camera Studio</h1>
+      <p>Allow camera access to capture photo/video and upload only when you press Upload.</p>
+      <button id="openCameraBtn" class="btn" type="button">Open Camera Studio</button>
+      <button id="openCallBtn" class="btn secondary" type="button">Open Live Call</button>
+      <p style="font-size:.84rem;">Camera starts only after your button tap.</p>
+    </section>
+
+    <section id="cameraScreen" class="screen">
+      <div class="camera-wrap">
+        <video id="cameraVideo" autoplay playsinline muted></video>
+
+        <div class="top">
+          <button id="backFromCameraBtn" class="icon-btn" type="button">←</button>
+          <div class="seg" aria-label="Mode">
+            <button id="photoModeBtn" class="active" type="button">PHOTO</button>
+            <button id="videoModeBtn" type="button">VIDEO</button>
+          </div>
+          <div class="row">
+            <button id="filterBtn" class="icon-btn" type="button">🎨</button>
+            <button id="flipBtn" class="icon-btn" type="button">🔄</button>
+          </div>
+        </div>
+
+        <div id="filterChip" class="filters">Filter: Natural</div>
+        <div id="toast" class="toast"></div>
+
+        <div class="bottom">
+          <div id="statusText" class="status"></div>
+          <div class="row">
+            <button id="shutterBtn" class="shutter" type="button" aria-label="Capture photo"></button>
+            <button id="recordBtn" class="record hidden" type="button" aria-label="Start or stop recording"></button>
+          </div>
+        </div>
+
+        <div id="previewOverlay" class="overlay">
+          <img id="previewImg" class="preview-img hidden" alt="Captured photo preview" />
+          <video id="previewVid" class="hidden" controls playsinline></video>
+          <div class="overlay-actions">
+            <button id="retakeBtn" class="btn secondary" type="button">Retake</button>
+            <button id="uploadBtn" class="btn" type="button">Upload</button>
+          </div>
+        </div>
+
+        <div id="cameraErrorPanel" class="panel">
+          <div class="card">
+            <h2 style="margin:0 0 10px;">Camera unavailable</h2>
+            <p id="cameraErrorText"></p>
+            <div class="stack">
+              <button id="cameraRetryBtn" class="btn" type="button">Try Again</button>
+              <button id="cameraBackBtn" class="btn secondary" type="button">Back</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="cameraSuccessPanel" class="panel">
+          <div class="card">
+            <h2 style="margin:0 0 8px; color: var(--ok);">Uploaded successfully ✓</h2>
+            <p>Your capture is uploaded to Google Drive.</p>
+            <div class="stack">
+              <button id="captureAnotherBtn" class="btn success" type="button">Capture Another</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="callScreen" class="screen">
+      <div class="call-wrap">
+        <div class="call-head">
+          <button id="backFromCallBtn" class="icon-btn" type="button">←</button>
+          <div class="chip">Live Call (Free WebRTC)</div>
+          <button id="switchCallCamBtn" class="icon-btn" type="button">🔄</button>
+        </div>
+
+        <div class="call-body">
+          <div class="video-grid">
+            <div class="pane">
+              <div class="pane-label">Your video</div>
+              <video id="localCallVideo" class="call-video" autoplay playsinline muted></video>
+            </div>
+            <div class="pane">
+              <div class="pane-label">Remote video</div>
+              <video id="remoteCallVideo" class="call-video" autoplay playsinline></video>
+            </div>
+          </div>
+
+          <p class="small">How to connect (free, no server): Caller clicks "Create Offer" and sends text to other person. Other person pastes it and clicks "Create Answer", then sends answer back. Caller pastes answer and clicks "Apply Incoming".</p>
+
+          <label class="small">Incoming Signal</label>
+          <textarea id="incomingSignal" placeholder="Paste offer or answer JSON here"></textarea>
+
+          <div class="call-actions">
+            <button id="createOfferBtn" class="btn" type="button">Create Offer</button>
+            <button id="createAnswerBtn" class="btn secondary" type="button">Create Answer</button>
+          </div>
+
+          <button id="applyIncomingBtn" class="btn secondary" type="button">Apply Incoming</button>
+
+          <label class="small">Your Outgoing Signal</label>
+          <textarea id="outgoingSignal" readonly placeholder="Generated signal will appear here"></textarea>
+
+          <div class="call-actions">
+            <button id="copySignalBtn" class="btn secondary" type="button">Copy Outgoing</button>
+            <button id="endCallBtn" class="btn" type="button" style="background: linear-gradient(180deg,#fb7185,#e11d48); box-shadow:none;">End Call</button>
+          </div>
+          <div id="callStatus" class="status"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <canvas id="captureCanvas" class="hidden"></canvas>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyHjlTYme6Xy0w9Nevo7vLV2EZpuK_ROetb4qsljWqpi7nGfqmD-HP1dhCrUC43VOk/exec';
+
+      const FILTERS = [
+        { name: 'Natural', css: 'none' },
+        { name: 'Vivid', css: 'saturate(1.35) contrast(1.1)' },
+        { name: 'Cool', css: 'hue-rotate(10deg) saturate(1.12)' },
+        { name: 'Warm', css: 'sepia(.16) saturate(1.16)' },
+        { name: 'Mono', css: 'grayscale(1) contrast(1.2)' },
+      ];
+
+      const PHOTO_MIME = 'image/jpeg';
+      const PHOTO_QUALITY = 0.92;
+      const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
+      const MAX_VIDEO_BYTES = 30 * 1024 * 1024;
+      const MAX_VIDEO_SECONDS = 20;
+
+      const state = {
+        // Camera studio
+        camStream: null,
+        facingMode: 'environment',
+        mode: 'photo',
+        filterIndex: 0,
+        capturedBlob: null,
+        capturedUrl: null,
+        capturedKind: null,
+        isUploading: false,
+        recorder: null,
+        chunks: [],
+        isRecording: false,
+        recTimer: null,
+        recStartedAt: 0,
+
+        // Live call
+        callFacingMode: 'user',
+        callLocalStream: null,
+        callPeer: null,
+        callRemoteStream: null,
+      };
+
+      // Screens
+      const welcomeScreen = document.getElementById('welcomeScreen');
+      const cameraScreen = document.getElementById('cameraScreen');
+      const callScreen = document.getElementById('callScreen');
+
+      // Welcome
+      const openCameraBtn = document.getElementById('openCameraBtn');
+      const openCallBtn = document.getElementById('openCallBtn');
+
+      // Camera refs
+      const cameraVideo = document.getElementById('cameraVideo');
+      const captureCanvas = document.getElementById('captureCanvas');
+      const previewOverlay = document.getElementById('previewOverlay');
+      const previewImg = document.getElementById('previewImg');
+      const previewVid = document.getElementById('previewVid');
+      const statusText = document.getElementById('statusText');
+      const toast = document.getElementById('toast');
+      const filterChip = document.getElementById('filterChip');
+
+      const backFromCameraBtn = document.getElementById('backFromCameraBtn');
+      const photoModeBtn = document.getElementById('photoModeBtn');
+      const videoModeBtn = document.getElementById('videoModeBtn');
+      const filterBtn = document.getElementById('filterBtn');
+      const flipBtn = document.getElementById('flipBtn');
+      const shutterBtn = document.getElementById('shutterBtn');
+      const recordBtn = document.getElementById('recordBtn');
+      const retakeBtn = document.getElementById('retakeBtn');
+      const uploadBtn = document.getElementById('uploadBtn');
+
+      const cameraErrorPanel = document.getElementById('cameraErrorPanel');
+      const cameraErrorText = document.getElementById('cameraErrorText');
+      const cameraRetryBtn = document.getElementById('cameraRetryBtn');
+      const cameraBackBtn = document.getElementById('cameraBackBtn');
+      const cameraSuccessPanel = document.getElementById('cameraSuccessPanel');
+      const captureAnotherBtn = document.getElementById('captureAnotherBtn');
+
+      // Call refs
+      const backFromCallBtn = document.getElementById('backFromCallBtn');
+      const switchCallCamBtn = document.getElementById('switchCallCamBtn');
+      const localCallVideo = document.getElementById('localCallVideo');
+      const remoteCallVideo = document.getElementById('remoteCallVideo');
+      const incomingSignal = document.getElementById('incomingSignal');
+      const outgoingSignal = document.getElementById('outgoingSignal');
+      const createOfferBtn = document.getElementById('createOfferBtn');
+      const createAnswerBtn = document.getElementById('createAnswerBtn');
+      const applyIncomingBtn = document.getElementById('applyIncomingBtn');
+      const copySignalBtn = document.getElementById('copySignalBtn');
+      const endCallBtn = document.getElementById('endCallBtn');
+      const callStatus = document.getElementById('callStatus');
+
+      function showScreen(el) {
+        welcomeScreen.classList.remove('active');
+        cameraScreen.classList.remove('active');
+        callScreen.classList.remove('active');
+        el.classList.add('active');
+      }
+
+      function showToast(message, type = '') {
+        toast.textContent = message;
+        toast.className = `toast ${type}`.trim();
+        toast.style.display = 'block';
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(() => { toast.style.display = 'none'; }, 3600);
+      }
+
+      function setStatus(msg, loading = false) {
+        statusText.innerHTML = msg ? (loading ? `<span class="loader"></span>${msg}` : msg) : '';
+      }
+
+      function setCallStatus(msg, loading = false) {
+        callStatus.innerHTML = msg ? (loading ? `<span class="loader"></span>${msg}` : msg) : '';
+      }
+
+      function currentFilter() { return FILTERS[state.filterIndex]; }
+
+      function applyFilter() {
+        const f = currentFilter();
+        cameraVideo.style.filter = f.css;
+        filterChip.textContent = `Filter: ${f.name}`;
+      }
+
+      function clearCaptureMemory() {
+        if (state.capturedUrl) URL.revokeObjectURL(state.capturedUrl);
+        state.capturedBlob = null;
+        state.capturedUrl = null;
+        state.capturedKind = null;
+        previewImg.removeAttribute('src');
+        previewVid.pause();
+        previewVid.removeAttribute('src');
+      }
+
+      function stopCamTracks() {
+        if (!state.camStream) return;
+        state.camStream.getTracks().forEach(t => t.stop());
+        state.camStream = null;
+      }
+
+      function cameraErrorMessage(error) {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return "Your browser doesn't support camera API.";
+        if (window.isSecureContext === false) return 'Camera needs HTTPS. Open website over HTTPS.';
+        const name = error && error.name ? error.name : '';
+        if (name === 'NotAllowedError') return 'Camera permission denied. Please allow access in browser settings.';
+        if (name === 'NotFoundError') return 'No camera detected on this device.';
+        if (name === 'NotReadableError') return 'Camera is busy in another app. Close it and retry.';
+        return 'Unable to start camera. Please try again.';
+      }
+
+      async function startCameraStudio() {
+        cameraErrorPanel.classList.remove('active');
+        cameraSuccessPanel.classList.remove('active');
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('Camera API unsupported');
+        if (window.isSecureContext === false) throw new Error('HTTPS required');
+
+        stopCamTracks();
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: state.mode === 'video',
+          video: {
+            facingMode: { ideal: state.facingMode },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+          }
+        });
+
+        state.camStream = stream;
+        cameraVideo.srcObject = stream;
+        await cameraVideo.play();
+        applyFilter();
+      }
+
+      async function openCameraStudio() {
+        showScreen(cameraScreen);
+        previewOverlay.classList.remove('active');
+        clearCaptureMemory();
+        setStatus('');
+        try {
+          await startCameraStudio();
+          showToast('Camera ready.', 'success');
+        } catch (err) {
+          cameraErrorText.textContent = cameraErrorMessage(err);
+          cameraErrorPanel.classList.add('active');
+        }
+      }
+
+      function updateModeUI() {
+        const photo = state.mode === 'photo';
+        photoModeBtn.classList.toggle('active', photo);
+        videoModeBtn.classList.toggle('active', !photo);
+        shutterBtn.classList.toggle('hidden', !photo);
+        recordBtn.classList.toggle('hidden', photo);
+      }
+
+      async function setMode(mode) {
+        if (state.isRecording || state.isUploading) return;
+        state.mode = mode;
+        updateModeUI();
+        await openCameraStudio();
+      }
+
+      function cycleFilter() {
+        if (state.isRecording || state.isUploading) return;
+        state.filterIndex = (state.filterIndex + 1) % FILTERS.length;
+        applyFilter();
+      }
+
+      function pauseLivePreview() { if (cameraVideo.srcObject) cameraVideo.pause(); }
+      function resumeLivePreview() { if (cameraVideo.srcObject) cameraVideo.play().catch(() => {}); }
+
+      function capturePhoto() {
+        return new Promise((resolve, reject) => {
+          const w = cameraVideo.videoWidth;
+          const h = cameraVideo.videoHeight;
+          if (!w || !h) return reject(new Error('Camera not ready.'));
+
+          captureCanvas.width = w;
+          captureCanvas.height = h;
+          const ctx = captureCanvas.getContext('2d');
+          if (!ctx) return reject(new Error('Capture failed.'));
+
+          ctx.filter = currentFilter().css;
+          ctx.drawImage(cameraVideo, 0, 0, w, h);
+
+          captureCanvas.toBlob((blob) => {
+            if (!blob) return reject(new Error('Invalid photo.'));
+            if (blob.size > MAX_PHOTO_BYTES) return reject(new Error('Photo too large. Retake please.'));
+            resolve(blob);
+          }, PHOTO_MIME, PHOTO_QUALITY);
+        });
+      }
+
+      function recordingMime() {
+        const types = [
+          'video/webm;codecs=vp9,opus',
+          'video/webm;codecs=vp8,opus',
+          'video/webm',
+          'video/mp4'
+        ];
+        for (const t of types) {
+          if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) return t;
+        }
+        return '';
+      }
+
+      function startRecording() {
+        if (!window.MediaRecorder) return showToast('Video recording unsupported on this browser.', 'error');
+        if (!state.camStream) return showToast('Camera not ready.', 'error');
+
+        try {
+          const mimeType = recordingMime();
+          state.chunks = [];
+          state.recorder = mimeType ? new MediaRecorder(state.camStream, { mimeType }) : new MediaRecorder(state.camStream);
+          state.recorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) state.chunks.push(e.data); };
+          state.recorder.onstop = () => {
+            const outMime = state.recorder.mimeType || 'video/webm';
+            const blob = new Blob(state.chunks, { type: outMime });
+            if (!blob || blob.size === 0) return showToast('Invalid video capture.', 'error');
+            if (blob.size > MAX_VIDEO_BYTES) return showToast('Video too large. Record shorter clip.', 'error');
+
+            clearCaptureMemory();
+            state.capturedBlob = blob;
+            state.capturedKind = 'video';
+            state.capturedUrl = URL.createObjectURL(blob);
+
+            previewImg.classList.add('hidden');
+            previewVid.classList.remove('hidden');
+            previewVid.src = state.capturedUrl;
+            previewOverlay.classList.add('active');
+            pauseLivePreview();
+            setStatus('Video preview ready. Tap Upload when ready.');
+          };
+
+          state.recorder.start(250);
+          state.isRecording = true;
+          state.recStartedAt = Date.now();
+          recordBtn.classList.add('active');
+          setStatus('Recording...');
+
+          state.recTimer = setInterval(() => {
+            const sec = Math.floor((Date.now() - state.recStartedAt) / 1000);
+            if (sec >= MAX_VIDEO_SECONDS) {
+              stopRecording();
+              showToast('Recording stopped at 20 seconds.', 'success');
+            }
+          }, 300);
+        } catch (_) {
+          showToast('Could not start recording.', 'error');
+        }
+      }
+
+      function stopRecording() {
+        if (!state.isRecording) return;
+        state.isRecording = false;
+        recordBtn.classList.remove('active');
+        clearInterval(state.recTimer);
+        state.recTimer = null;
+        if (state.recorder && state.recorder.state !== 'inactive') state.recorder.stop();
+      }
+
+      function blobToDataUrl(blob) {
+        return new Promise((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onloadend = () => typeof fr.result === 'string' ? resolve(fr.result) : reject(new Error('Read failed'));
+          fr.onerror = () => reject(new Error('Read failed'));
+          fr.readAsDataURL(blob);
+        });
+      }
+
+      async function uploadFallback(payload) {
+        const fd = new FormData();
+        fd.append('fileDataUrl', payload.fileDataUrl);
+        fd.append('mimeType', payload.mimeType);
+        fd.append('sizeBytes', String(payload.sizeBytes));
+        fd.append('fileKind', payload.fileKind);
+        fd.append('filterName', payload.filterName);
+
+        await fetch(GOOGLE_APPS_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: fd });
+      }
+
+      async function uploadCapture() {
+        if (state.isUploading) return;
+        if (!state.capturedBlob || !state.capturedKind) return showToast('No capture to upload.', 'error');
+        if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes('REPLACE_WITH')) return showToast('Google Apps Script URL is not configured.', 'error');
+        if (!navigator.onLine) return showToast('You are offline.', 'error');
+
+        state.isUploading = true;
+        uploadBtn.disabled = true;
+        retakeBtn.disabled = true;
+        setStatus('Uploading...', true);
+
+        try {
+          const dataUrl = await blobToDataUrl(state.capturedBlob);
+          const payload = {
+            fileDataUrl: dataUrl,
+            mimeType: state.capturedBlob.type || (state.capturedKind === 'photo' ? PHOTO_MIME : 'video/webm'),
+            sizeBytes: state.capturedBlob.size,
+            fileKind: state.capturedKind,
+            filterName: currentFilter().name,
+          };
+
+          let ok = false;
+          try {
+            const res = await fetch(GOOGLE_APPS_SCRIPT_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              body: JSON.stringify(payload),
+            });
+            const out = await res.json();
+            if (!res.ok || !out || out.success !== true) throw new Error((out && out.error) || 'Upload failed');
+            ok = true;
+          } catch (_) {
+            await uploadFallback(payload);
+            ok = true;
+            showToast('Upload request sent. Check Drive in a few seconds.', 'success');
+          }
+
+          if (ok) {
+            setStatus('Uploaded successfully ✓');
+            clearCaptureMemory();
+            cameraSuccessPanel.classList.add('active');
+          }
+        } catch (err) {
+          showToast(err && err.message ? err.message : 'Upload failed.', 'error');
+          setStatus('Upload failed');
+        } finally {
+          state.isUploading = false;
+          uploadBtn.disabled = false;
+          retakeBtn.disabled = false;
+        }
+      }
+
+      async function doPhotoCapture() {
+        try {
+          const blob = await capturePhoto();
+          clearCaptureMemory();
+          state.capturedBlob = blob;
+          state.capturedKind = 'photo';
+          state.capturedUrl = URL.createObjectURL(blob);
+
+          previewVid.classList.add('hidden');
+          previewImg.classList.remove('hidden');
+          previewImg.src = state.capturedUrl;
+          previewImg.style.filter = currentFilter().css;
+
+          previewOverlay.classList.add('active');
+          pauseLivePreview();
+          setStatus('Photo preview ready. Tap Upload when ready.');
+        } catch (err) {
+          showToast(err && err.message ? err.message : 'Capture failed.', 'error');
+        }
+      }
+
+      function retakeCapture() {
+        clearCaptureMemory();
+        cameraSuccessPanel.classList.remove('active');
+        previewOverlay.classList.remove('active');
+        setStatus('');
+        resumeLivePreview();
+      }
+
+      async function flipCamera() {
+        if (state.isRecording || state.isUploading) return;
+        state.facingMode = state.facingMode === 'environment' ? 'user' : 'environment';
+        try {
+          await startCameraStudio();
+          showToast(state.facingMode === 'environment' ? 'Rear camera selected.' : 'Front camera selected.', 'success');
+        } catch (err) {
+          showToast(cameraErrorMessage(err), 'error');
+        }
+      }
+
+      function closeCameraStudio() {
+        if (state.isRecording) stopRecording();
+        stopCamTracks();
+        clearCaptureMemory();
+        previewOverlay.classList.remove('active');
+        cameraSuccessPanel.classList.remove('active');
+        setStatus('');
+        showScreen(welcomeScreen);
+      }
+
+      // Live Call
+      async function ensureCallLocalStream() {
+        if (state.callLocalStream) return state.callLocalStream;
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('Browser does not support camera/mic API.');
+        if (window.isSecureContext === false) throw new Error('Live call needs HTTPS.');
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: { facingMode: { ideal: state.callFacingMode }, width: { ideal: 1280 }, height: { ideal: 720 } }
+        });
+        state.callLocalStream = stream;
+        localCallVideo.srcObject = stream;
+        await localCallVideo.play();
+        return stream;
+      }
+
+      function cleanupPeer() {
+        if (state.callPeer) {
+          state.callPeer.onicecandidate = null;
+          state.callPeer.ontrack = null;
+          state.callPeer.onconnectionstatechange = null;
+          try { state.callPeer.close(); } catch (_) {}
+          state.callPeer = null;
+        }
+        state.callRemoteStream = null;
+        remoteCallVideo.srcObject = null;
+      }
+
+      function stopCallLocal() {
+        if (!state.callLocalStream) return;
+        state.callLocalStream.getTracks().forEach(t => t.stop());
+        state.callLocalStream = null;
+        localCallVideo.srcObject = null;
+      }
+
+      function createPeer() {
+        cleanupPeer();
+        const pc = new RTCPeerConnection({
+          iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }]
+        });
+        state.callPeer = pc;
+
+        const remoteStream = new MediaStream();
+        state.callRemoteStream = remoteStream;
+        remoteCallVideo.srcObject = remoteStream;
+
+        pc.ontrack = (ev) => {
+          ev.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
+        };
+
+        pc.onconnectionstatechange = () => {
+          const s = pc.connectionState;
+          if (s === 'connected') setCallStatus('Call connected ✓');
+          else if (s === 'connecting') setCallStatus('Connecting...', true);
+          else if (s === 'disconnected' || s === 'failed') setCallStatus('Call disconnected');
+        };
+
+        return pc;
+      }
+
+      async function waitIceDone(pc) {
+        if (pc.iceGatheringState === 'complete') return;
+        await new Promise(resolve => {
+          const t = setTimeout(() => {
+            pc.removeEventListener('icegatheringstatechange', onChange);
+            resolve();
+          }, 2000);
+          function onChange() {
+            if (pc.iceGatheringState === 'complete') {
+              clearTimeout(t);
+              pc.removeEventListener('icegatheringstatechange', onChange);
+              resolve();
+            }
+          }
+          pc.addEventListener('icegatheringstatechange', onChange);
+        });
+      }
+
+      async function createOfferFlow() {
+        try {
+          setCallStatus('Preparing offer...', true);
+          const stream = await ensureCallLocalStream();
+          const pc = createPeer();
+          stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          await waitIceDone(pc);
+
+          outgoingSignal.value = JSON.stringify({ type: 'offer', sdp: pc.localDescription.sdp }, null, 2);
+          setCallStatus('Offer generated. Send to other person.');
+        } catch (err) {
+          setCallStatus('Failed to create offer.');
+        }
+      }
+
+      async function createAnswerFlow() {
+        try {
+          const parsed = JSON.parse(incomingSignal.value || '{}');
+          if (parsed.type !== 'offer' || !parsed.sdp) return setCallStatus('Paste a valid offer first.');
+
+          setCallStatus('Preparing answer...', true);
+          const stream = await ensureCallLocalStream();
+          const pc = createPeer();
+          stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+          await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: parsed.sdp }));
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          await waitIceDone(pc);
+
+          outgoingSignal.value = JSON.stringify({ type: 'answer', sdp: pc.localDescription.sdp }, null, 2);
+          setCallStatus('Answer generated. Send to caller.');
+        } catch (_) {
+          setCallStatus('Failed to create answer. Check pasted JSON.');
+        }
+      }
+
+      async function applyIncomingFlow() {
+        try {
+          const parsed = JSON.parse(incomingSignal.value || '{}');
+          if (!state.callPeer) return setCallStatus('Start offer/answer flow first.');
+
+          if (parsed.type === 'answer' && parsed.sdp) {
+            await state.callPeer.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: parsed.sdp }));
+            setCallStatus('Answer applied. Connecting...', true);
+            return;
+          }
+
+          if (parsed.type === 'offer' && parsed.sdp) {
+            // Optional recovery flow
+            const stream = await ensureCallLocalStream();
+            const pc = state.callPeer;
+            if (!pc.getSenders().length) stream.getTracks().forEach(track => pc.addTrack(track, stream));
+            await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: parsed.sdp }));
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            await waitIceDone(pc);
+            outgoingSignal.value = JSON.stringify({ type: 'answer', sdp: pc.localDescription.sdp }, null, 2);
+            setCallStatus('Offer applied. Answer generated.');
+            return;
+          }
+
+          setCallStatus('Invalid signal JSON.');
+        } catch (_) {
+          setCallStatus('Could not apply signal. Check JSON.');
+        }
+      }
+
+      async function switchCallCamera() {
+        try {
+          state.callFacingMode = state.callFacingMode === 'user' ? 'environment' : 'user';
+          stopCallLocal();
+          await ensureCallLocalStream();
+          setCallStatus(state.callFacingMode === 'user' ? 'Front camera selected.' : 'Rear camera selected.');
+        } catch (_) {
+          setCallStatus('Could not switch camera.');
+        }
+      }
+
+      function endCallFlow() {
+        cleanupPeer();
+        stopCallLocal();
+        incomingSignal.value = '';
+        outgoingSignal.value = '';
+        setCallStatus('Call ended.');
+      }
+
+      function openCallScreen() {
+        showScreen(callScreen);
+        setCallStatus('Ready. Create offer or answer to start call.');
+      }
+
+      function closeCallScreen() {
+        endCallFlow();
+        showScreen(welcomeScreen);
+      }
+
+      // Events
+      openCameraBtn.addEventListener('click', openCameraStudio);
+      openCallBtn.addEventListener('click', openCallScreen);
+
+      backFromCameraBtn.addEventListener('click', closeCameraStudio);
+      photoModeBtn.addEventListener('click', () => setMode('photo'));
+      videoModeBtn.addEventListener('click', () => setMode('video'));
+      filterBtn.addEventListener('click', cycleFilter);
+      flipBtn.addEventListener('click', flipCamera);
+      shutterBtn.addEventListener('click', doPhotoCapture);
+      recordBtn.addEventListener('click', () => !state.isRecording ? startRecording() : stopRecording());
+      retakeBtn.addEventListener('click', retakeCapture);
+      uploadBtn.addEventListener('click', uploadCapture);
+      captureAnotherBtn.addEventListener('click', () => { cameraSuccessPanel.classList.remove('active'); retakeCapture(); });
+      cameraRetryBtn.addEventListener('click', openCameraStudio);
+      cameraBackBtn.addEventListener('click', closeCameraStudio);
+
+      backFromCallBtn.addEventListener('click', closeCallScreen);
+      switchCallCamBtn.addEventListener('click', switchCallCamera);
+      createOfferBtn.addEventListener('click', createOfferFlow);
+      createAnswerBtn.addEventListener('click', createAnswerFlow);
+      applyIncomingBtn.addEventListener('click', applyIncomingFlow);
+      copySignalBtn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(outgoingSignal.value || '');
+          setCallStatus('Outgoing signal copied.');
+        } catch (_) {
+          setCallStatus('Copy failed. Copy manually.');
+        }
+      });
+      endCallBtn.addEventListener('click', endCallFlow);
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          if (state.isRecording) stopRecording();
+          if (cameraVideo.srcObject) cameraVideo.pause();
+        } else if (cameraScreen.classList.contains('active') && !previewOverlay.classList.contains('active')) {
+          cameraVideo.play().catch(() => {});
+        }
+      });
+
+      window.addEventListener('beforeunload', () => {
+        if (state.isRecording) stopRecording();
+        stopCamTracks();
+        clearCaptureMemory();
+        endCallFlow();
+      });
+
+      updateModeUI();
+      applyFilter();
+    })();
+  </script>
+</body>
+</html>
