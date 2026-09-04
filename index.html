@@ -6,289 +6,319 @@
   <title>Camera Studio Pro</title>
   <style>
     :root {
-      --bg: #050814;
+      --bg: #060b16;
       --panel: rgba(15, 23, 42, 0.78);
-      --text: #eef2ff;
-      --muted: #9ca3af;
-      --accent: #38bdf8;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --brand: #38bdf8;
+      --brand2: #0ea5e9;
       --ok: #22c55e;
       --danger: #fb7185;
+      --border: rgba(255,255,255,.14);
+      --shadow: 0 18px 50px rgba(0,0,0,.45);
     }
     * { box-sizing: border-box; }
     html, body {
-      margin: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: radial-gradient(circle at top right, #0f1f36, var(--bg) 58%);
-      color: var(--text);
+      margin: 0; width: 100%; height: 100%; overflow: hidden;
+      background: radial-gradient(circle at 85% 0%, #102641, var(--bg) 58%);
+      color: var(--text); font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     }
-    .app { width: 100%; height: 100%; display: grid; place-items: center; padding: 12px; }
-    .screen {
-      width: 100%; max-width: 560px; height: 100%; max-height: 980px;
-      border-radius: 24px; overflow: hidden; border: 1px solid rgba(255,255,255,.08);
-      background: rgba(2, 6, 23, .9); display: none; position: relative;
-      box-shadow: 0 20px 56px rgba(0, 0, 0, .42);
+    .app { width: 100%; height: 100%; display: grid; place-items: center; padding: 10px; }
+    .phone {
+      width: 100%; max-width: 560px; height: 100%; max-height: 980px; border-radius: 24px; overflow: hidden;
+      border: 1px solid rgba(255,255,255,.1); background: rgba(2,6,23,.9); box-shadow: var(--shadow); position: relative;
     }
-    .screen.active { display: block; }
+    .video-wrap { position: absolute; inset: 0; background: #000; }
+    video, img.preview { width: 100%; height: 100%; object-fit: cover; display: block; background: #000; }
 
-    .welcome {
-      display: grid; align-content: center; gap: 14px; text-align: center; padding: 24px;
-      background: linear-gradient(165deg, rgba(15,23,42,.8), rgba(2,6,23,.96));
+    .grid-overlay {
+      position: absolute; inset: 0; pointer-events: none; z-index: 3; display: none;
+      background-image:
+        linear-gradient(to right, transparent 33.33%, rgba(255,255,255,.2) 33.33%, rgba(255,255,255,.2) 34%, transparent 34%, transparent 66.66%, rgba(255,255,255,.2) 66.66%, rgba(255,255,255,.2) 67%, transparent 67%),
+        linear-gradient(to bottom, transparent 33.33%, rgba(255,255,255,.2) 33.33%, rgba(255,255,255,.2) 34%, transparent 34%, transparent 66.66%, rgba(255,255,255,.2) 66.66%, rgba(255,255,255,.2) 67%, transparent 67%);
     }
-    h1 { margin: 0; font-size: clamp(1.75rem, 5vw, 2.3rem); }
-    p { margin: 0; color: var(--muted); line-height: 1.55; }
-    .logo {
-      width: 76px; height: 76px; border-radius: 999px; margin: 0 auto;
-      background: radial-gradient(circle at 35% 35%, #67e8f9, #0ea5e9 60%, #0369a1);
-      display: grid; place-items: center; font-size: 30px;
-      box-shadow: 0 10px 28px rgba(14, 165, 233, 0.4);
-    }
+    .grid-overlay.active { display: block; }
 
-    .btn {
-      border: 0; border-radius: 14px; padding: 13px 16px; color: white; font-weight: 700;
-      background: linear-gradient(180deg, #38bdf8, #0284c7); cursor: pointer;
-      box-shadow: 0 10px 24px rgba(2, 132, 199, .34);
+    .focus-ring {
+      position: absolute; width: 78px; height: 78px; border: 2px solid #93c5fd; border-radius: 12px;
+      pointer-events: none; z-index: 6; opacity: 0; transform: translate(-50%, -50%) scale(.8);
+      transition: transform .2s ease, opacity .2s ease;
     }
-    .btn.secondary {
-      color: var(--text); background: rgba(148,163,184,.14); border: 1px solid rgba(255,255,255,.14); box-shadow: none;
-    }
-    .btn.success {
-      background: linear-gradient(180deg, #4ade80, #16a34a); box-shadow: 0 10px 24px rgba(22, 163, 74, .35);
-    }
-    .btn:disabled { opacity: .55; cursor: not-allowed; }
-
-    .camera-wrap { position: relative; width: 100%; height: 100%; background: #000; }
-    video, .preview-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .focus-ring.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 
     .top {
-      position: absolute; left: 0; right: 0; top: 0; z-index: 4;
-      padding: max(12px, env(safe-area-inset-top)) 12px 8px;
-      display: flex; justify-content: space-between; align-items: center;
-      background: linear-gradient(180deg, rgba(0,0,0,.64), rgba(0,0,0,0));
+      position: absolute; top: 0; left: 0; right: 0; z-index: 7; padding: max(12px, env(safe-area-inset-top)) 10px 8px;
+      display: grid; gap: 8px; background: linear-gradient(180deg, rgba(0,0,0,.64), rgba(0,0,0,0));
     }
-    .chip {
-      border: 1px solid rgba(255,255,255,.18); background: rgba(15,23,42,.7);
-      border-radius: 999px; padding: 7px 11px; font-size: .82rem;
+    .top-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .title { font-weight: 700; font-size: .95rem; }
+
+    .tabs {
+      display: inline-grid; grid-template-columns: 1fr 1fr; border-radius: 999px;
+      background: rgba(15,23,42,.76); border: 1px solid var(--border); padding: 3px;
     }
+    .tabs button {
+      border: 0; border-radius: 999px; background: transparent; color: #dbeafe;
+      padding: 7px 11px; font-size: .78rem; font-weight: 700; cursor: pointer;
+    }
+    .tabs button.active { color: #082f49; background: linear-gradient(180deg, #7dd3fc, #38bdf8); }
+
+    .tool-row { display: flex; gap: 7px; align-items: center; overflow-x: auto; padding-bottom: 2px; }
+    .chip-btn {
+      border: 1px solid var(--border); background: rgba(15,23,42,.72); color: #e2e8f0;
+      border-radius: 999px; padding: 7px 10px; font-size: .77rem; cursor: pointer; white-space: nowrap;
+    }
+    .chip-btn.active { border-color: rgba(56,189,248,.6); color: #7dd3fc; }
+
     .icon-btn {
-      width: 42px; height: 42px; border-radius: 999px; border: 1px solid rgba(255,255,255,.2);
-      background: rgba(15,23,42,.66); color: white; cursor: pointer;
+      width: 40px; height: 40px; border-radius: 999px; border: 1px solid var(--border);
+      background: rgba(15,23,42,.72); color: white; cursor: pointer; display: grid; place-items: center;
+    }
+
+    .filter-chip {
+      position: absolute; top: calc(max(12px, env(safe-area-inset-top)) + 86px); left: 50%; transform: translateX(-50%);
+      z-index: 8; border-radius: 999px; border: 1px solid var(--border); background: rgba(15,23,42,.76);
+      padding: 6px 12px; font-size: .78rem;
     }
 
     .bottom {
-      position: absolute; left: 0; right: 0; bottom: 0; z-index: 5;
-      padding: 10px 12px max(14px, env(safe-area-inset-bottom));
-      background: linear-gradient(0deg, rgba(0,0,0,.78), rgba(0,0,0,0));
-      display: grid; gap: 10px;
+      position: absolute; left: 0; right: 0; bottom: 0; z-index: 8;
+      padding: 10px 12px max(14px, env(safe-area-inset-bottom)); display: grid; gap: 10px;
+      background: linear-gradient(0deg, rgba(0,0,0,.8), rgba(0,0,0,0));
     }
-    .row { display: flex; align-items: center; justify-content: center; gap: 10px; }
-
-    .seg {
-      display: inline-grid; grid-template-columns: 1fr 1fr; padding: 3px;
-      border-radius: 999px; background: rgba(15,23,42,.7); border: 1px solid rgba(255,255,255,.14);
-    }
-    .seg button {
-      border: 0; border-radius: 999px; background: transparent; color: #dbeafe; font-weight: 700;
-      font-size: .8rem; padding: 7px 12px; cursor: pointer;
-    }
-    .seg button.active { background: linear-gradient(180deg, #7dd3fc, #38bdf8); color: #082f49; }
-
-    .status {
-      min-height: 23px; text-align: center; font-size: .9rem; color: #d1d5db;
-      display: flex; gap: 8px; justify-content: center; align-items: center;
-    }
-    .loader {
-      width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(255,255,255,.25);
-      border-top-color: #fff; animation: spin .9s linear infinite;
-    }
+    .status { min-height: 22px; text-align: center; color: #d1d5db; font-size: .9rem; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .loader { width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(255,255,255,.25); border-top-color: #fff; animation: spin .9s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .shutter {
-      width: 92px; height: 92px; border-radius: 999px; border: 4px solid rgba(255,255,255,.95);
-      background: rgba(255,255,255,.16); box-shadow: inset 0 0 0 10px rgba(255,255,255,.14), 0 0 0 8px rgba(255,255,255,.12);
-    }
-    .record {
-      width: 92px; height: 92px; border-radius: 999px; border: 4px solid rgba(255,255,255,.95);
-      background: rgba(239,68,68,.2); box-shadow: inset 0 0 0 10px rgba(239,68,68,.56), 0 0 0 8px rgba(255,255,255,.12);
-    }
-    .record.active {
-      width: 86px; height: 86px; border-radius: 20px; box-shadow: inset 0 0 0 21px rgba(239,68,68,.82), 0 0 0 8px rgba(255,255,255,.12);
-    }
+    .progress-wrap { width: min(90%, 420px); height: 8px; margin: 0 auto; border-radius: 999px; background: rgba(255,255,255,.15); overflow: hidden; display: none; }
+    .progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #38bdf8, #22d3ee); transition: width .2s linear; }
 
-    .filters {
-      position: absolute; top: calc(max(12px, env(safe-area-inset-top)) + 54px); left: 50%; transform: translateX(-50%);
-      z-index: 4; background: rgba(15,23,42,.68); border: 1px solid rgba(255,255,255,.14);
-      border-radius: 999px; padding: 6px 10px; font-size: .8rem;
+    .control-row { display: grid; grid-template-columns: 54px 1fr 54px; align-items: center; gap: 8px; }
+    .label { text-align: center; font-size: .78rem; color: #cbd5e1; font-weight: 600; }
+    .shutter, .record-btn {
+      width: 92px; height: 92px; margin: 0 auto; border-radius: 999px; border: 4px solid rgba(255,255,255,.95);
+      background: rgba(255,255,255,.16); cursor: pointer;
+      box-shadow: inset 0 0 0 10px rgba(255,255,255,.14), 0 0 0 8px rgba(255,255,255,.12);
     }
+    .record-btn { background: rgba(239,68,68,.2); box-shadow: inset 0 0 0 10px rgba(239,68,68,.55), 0 0 0 8px rgba(255,255,255,.12); }
+    .record-btn.active { width: 86px; height: 86px; border-radius: 20px; box-shadow: inset 0 0 0 22px rgba(239,68,68,.82), 0 0 0 8px rgba(255,255,255,.12); }
+
+    .overlay {
+      position: absolute; inset: 0; z-index: 10; background: linear-gradient(0deg, rgba(0,0,0,.82), rgba(0,0,0,.08));
+      display: none; align-content: end;
+    }
+    .overlay.active { display: grid; }
+    .overlay video, .overlay img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; }
+    .overlay-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 16px; }
+
+    .btn {
+      border: 0; border-radius: 12px; padding: 12px 14px; font-weight: 700; color: white; cursor: pointer;
+      background: linear-gradient(180deg, var(--brand), var(--brand2)); box-shadow: 0 10px 24px rgba(14,165,233,.32);
+    }
+    .btn.secondary { background: rgba(148,163,184,.14); border: 1px solid var(--border); color: var(--text); box-shadow: none; }
+    .btn.success { background: linear-gradient(180deg, #4ade80, #16a34a); box-shadow: 0 10px 24px rgba(22,163,74,.35); }
+    .btn:disabled { opacity: .55; cursor: not-allowed; }
+
+    .panel {
+      position: absolute; inset: 0; z-index: 20; display: none; place-items: center;
+      background: radial-gradient(circle at center, rgba(30,41,59,.36), rgba(2,6,23,.92)); padding: 16px;
+    }
+    .panel.active { display: grid; }
+    .card { width: min(95%, 440px); border-radius: 18px; background: var(--panel); border: 1px solid var(--border); padding: 16px; text-align: center; }
+    .card h2 { margin: 0 0 8px; }
+    .card p { margin: 0; color: var(--muted); line-height: 1.5; }
+    .stack { margin-top: 12px; display: grid; gap: 10px; }
 
     .toast {
-      position: absolute; z-index: 6; top: calc(max(12px, env(safe-area-inset-top)) + 86px); left: 50%; transform: translateX(-50%);
-      width: min(92%, 420px); display: none; border-radius: 12px; padding: 10px 12px;
-      border: 1px solid rgba(255,255,255,.16); background: rgba(2, 6, 23, .85); font-size: .9rem;
+      position: absolute; z-index: 30; top: calc(max(12px, env(safe-area-inset-top)) + 116px); left: 50%; transform: translateX(-50%);
+      width: min(92%, 430px); display: none; border-radius: 12px; border: 1px solid var(--border);
+      background: rgba(2,6,23,.85); padding: 10px 12px; font-size: .9rem;
     }
     .toast.error { border-color: rgba(251,113,133,.5); color: #ffe4e6; }
     .toast.success { border-color: rgba(34,197,94,.5); color: #dcfce7; }
 
-    .overlay {
-      position: absolute; inset: 0; z-index: 7; background: linear-gradient(0deg, rgba(0,0,0,.82), rgba(0,0,0,.05));
-      display: none; align-content: end;
+    .call-pane {
+      position: absolute; inset: 0; z-index: 12; display: none; grid-template-rows: auto 1fr;
+      background: rgba(2,6,23,.88);
     }
-    .overlay.active { display: grid; }
-    .overlay video, .overlay img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-    .overlay-actions { padding: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-    .panel {
-      position: absolute; inset: 0; z-index: 8; display: none; place-items: center;
-      background: radial-gradient(circle at center, rgba(30,41,59,.32), rgba(2,6,23,.9)); padding: 16px;
-    }
-    .panel.active { display: grid; }
-    .card {
-      width: min(95%, 430px); border-radius: 18px; background: var(--panel);
-      border: 1px solid rgba(255,255,255,.15); padding: 16px; text-align: center;
-    }
-    .stack { display: grid; gap: 10px; margin-top: 12px; }
-
-    /* Live call */
-    .call-wrap { height: 100%; display: grid; grid-template-rows: auto 1fr auto; }
+    .call-pane.active { display: grid; }
     .call-head {
-      padding: max(12px, env(safe-area-inset-top)) 12px 10px;
-      display: flex; justify-content: space-between; align-items: center;
-      background: linear-gradient(180deg, rgba(0,0,0,.58), rgba(0,0,0,.08));
+      padding: max(12px, env(safe-area-inset-top)) 12px 8px; display: flex; justify-content: space-between; align-items: center;
+      background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,0));
     }
-    .call-body { padding: 10px; overflow: auto; display: grid; gap: 10px; }
-    .video-grid { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
-    .pane {
-      border-radius: 14px; overflow: hidden; border: 1px solid rgba(255,255,255,.12);
-      background: rgba(2, 6, 23, .85);
-    }
-    .pane-label { padding: 8px; font-size: .8rem; color: #cbd5e1; }
-    .call-video { width: 100%; aspect-ratio: 9/13; object-fit: cover; background: #000; display: block; }
+    .call-body { padding: 10px; overflow: auto; display: grid; gap: 10px; align-content: start; }
+    .call-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .mini { border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: #000; }
+    .mini video { width: 100%; aspect-ratio: 9/13; object-fit: cover; }
+    .mini label { display: block; padding: 6px 8px; font-size: .76rem; color: #cbd5e1; background: rgba(15,23,42,.72); }
 
-    textarea {
-      width: 100%; min-height: 120px; resize: vertical; border-radius: 12px; border: 1px solid rgba(255,255,255,.14);
-      background: rgba(15,23,42,.68); color: #e2e8f0; padding: 10px; font-size: .83rem;
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    textarea, input {
+      width: 100%; border-radius: 10px; border: 1px solid var(--border); background: rgba(15,23,42,.75); color: #dbeafe;
+      padding: 10px; font-size: .82rem;
     }
-    .call-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .small { font-size: .82rem; color: #9fb1c8; }
+    textarea { min-height: 110px; resize: vertical; }
+    .small { font-size: .8rem; color: #9fb1c8; }
+
+    .stats-pane {
+      position: absolute; inset: 0; z-index: 13; display: none; background: rgba(2,6,23,.92);
+      backdrop-filter: blur(6px); padding: max(12px, env(safe-area-inset-top)) 12px 12px;
+    }
+    .stats-pane.active { display: block; }
+    .stats-grid { margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .stat-card { border: 1px solid var(--border); border-radius: 12px; background: rgba(15,23,42,.72); padding: 10px; }
+    .stat-label { font-size: .76rem; color: #93a6be; }
+    .stat-value { font-size: 1.1rem; font-weight: 700; margin-top: 4px; }
 
     .hidden { display: none !important; }
   </style>
 </head>
 <body>
   <div class="app">
-    <section id="welcomeScreen" class="screen welcome active">
-      <div class="logo">📸</div>
-      <h1>Camera Studio</h1>
-      <p>Allow camera access to capture photo/video and upload only when you press Upload.</p>
-      <button id="openCameraBtn" class="btn" type="button">Open Camera Studio</button>
-      <button id="openCallBtn" class="btn secondary" type="button">Open Live Call</button>
-      <p style="font-size:.84rem;">Camera starts only after your button tap.</p>
-    </section>
+    <div class="phone">
+      <div class="video-wrap">
+        <video id="liveVideo" autoplay playsinline muted></video>
+        <div id="gridOverlay" class="grid-overlay"></div>
+        <div id="focusRing" class="focus-ring"></div>
+      </div>
 
-    <section id="cameraScreen" class="screen">
-      <div class="camera-wrap">
-        <video id="cameraVideo" autoplay playsinline muted></video>
-
-        <div class="top">
-          <button id="backFromCameraBtn" class="icon-btn" type="button">←</button>
-          <div class="seg" aria-label="Mode">
-            <button id="photoModeBtn" class="active" type="button">PHOTO</button>
-            <button id="videoModeBtn" type="button">VIDEO</button>
+      <div class="top">
+        <div class="top-row">
+          <div class="title">Camera Studio Pro</div>
+          <div class="tabs">
+            <button id="studioTab" class="active" type="button">STUDIO</button>
+            <button id="callTab" type="button">LIVE CALL</button>
           </div>
-          <div class="row">
-            <button id="filterBtn" class="icon-btn" type="button">🎨</button>
-            <button id="flipBtn" class="icon-btn" type="button">🔄</button>
-          </div>
+          <button id="openStatsBtn" class="icon-btn" type="button" title="Stats">📊</button>
         </div>
 
-        <div id="filterChip" class="filters">Filter: Natural</div>
-        <div id="toast" class="toast"></div>
-
-        <div class="bottom">
-          <div id="statusText" class="status"></div>
-          <div class="row">
-            <button id="shutterBtn" class="shutter" type="button" aria-label="Capture photo"></button>
-            <button id="recordBtn" class="record hidden" type="button" aria-label="Start or stop recording"></button>
-          </div>
+        <div class="tool-row">
+          <button id="filterBtn" class="chip-btn" type="button">Filter</button>
+          <button id="flipBtn" class="chip-btn" type="button">Flip</button>
+          <button id="gridBtn" class="chip-btn" type="button">Grid</button>
+          <button id="torchBtn" class="chip-btn" type="button">Torch</button>
+          <button id="timer0Btn" class="chip-btn active" type="button">Timer Off</button>
+          <button id="timer3Btn" class="chip-btn" type="button">3s</button>
+          <button id="timer5Btn" class="chip-btn" type="button">5s</button>
         </div>
 
-        <div id="previewOverlay" class="overlay">
-          <img id="previewImg" class="preview-img hidden" alt="Captured photo preview" />
-          <video id="previewVid" class="hidden" controls playsinline></video>
-          <div class="overlay-actions">
-            <button id="retakeBtn" class="btn secondary" type="button">Retake</button>
-            <button id="uploadBtn" class="btn" type="button">Upload</button>
-          </div>
+        <input id="zoomSlider" type="range" min="1" max="1" step="0.1" value="1" />
+      </div>
+
+      <div id="filterChip" class="filter-chip">Filter: Natural</div>
+      <div id="toast" class="toast"></div>
+
+      <div id="studioBottom" class="bottom">
+        <div id="studioStatus" class="status"></div>
+        <div class="progress-wrap" id="uploadProgressWrap"><div id="uploadProgressBar" class="progress-bar"></div></div>
+
+        <div class="tabs" style="justify-self:center;">
+          <button id="photoModeBtn" class="active" type="button">PHOTO</button>
+          <button id="videoModeBtn" type="button">VIDEO</button>
         </div>
 
-        <div id="cameraErrorPanel" class="panel">
-          <div class="card">
-            <h2 style="margin:0 0 10px;">Camera unavailable</h2>
-            <p id="cameraErrorText"></p>
-            <div class="stack">
-              <button id="cameraRetryBtn" class="btn" type="button">Try Again</button>
-              <button id="cameraBackBtn" class="btn secondary" type="button">Back</button>
-            </div>
-          </div>
+        <div class="control-row">
+          <div id="leftLabel" class="label">Ready</div>
+          <button id="shutterBtn" class="shutter" type="button" aria-label="Take photo"></button>
+          <button id="recordBtn" class="record-btn hidden" type="button" aria-label="Record video"></button>
+          <div id="rightLabel" class="label">HD</div>
         </div>
+      </div>
 
-        <div id="cameraSuccessPanel" class="panel">
-          <div class="card">
-            <h2 style="margin:0 0 8px; color: var(--ok);">Uploaded successfully ✓</h2>
-            <p>Your capture is uploaded to Google Drive.</p>
-            <div class="stack">
-              <button id="captureAnotherBtn" class="btn success" type="button">Capture Another</button>
-            </div>
+      <div id="previewOverlay" class="overlay">
+        <img id="previewImg" class="preview hidden" alt="Captured preview" />
+        <video id="previewVid" class="hidden" controls playsinline></video>
+        <div class="overlay-actions">
+          <button id="retakeBtn" class="btn secondary" type="button">Retake</button>
+          <button id="uploadBtn" class="btn" type="button">Upload</button>
+        </div>
+      </div>
+
+      <div id="permissionPanel" class="panel active">
+        <div class="card">
+          <h2>Allow Camera & Mic</h2>
+          <p id="permissionText">To avoid repeated prompts, we request camera + microphone once when the app opens.</p>
+          <div class="stack">
+            <button id="retryPermissionBtn" class="btn" type="button">Grant Permission</button>
           </div>
         </div>
       </div>
-    </section>
 
-    <section id="callScreen" class="screen">
-      <div class="call-wrap">
+      <div id="successPanel" class="panel">
+        <div class="card">
+          <h2 style="color:var(--ok)">Uploaded successfully ✓</h2>
+          <p>Your file is saved to Google Drive.</p>
+          <div class="stack"><button id="againBtn" class="btn success" type="button">Capture Another</button></div>
+        </div>
+      </div>
+
+      <div id="callPane" class="call-pane">
         <div class="call-head">
-          <button id="backFromCallBtn" class="icon-btn" type="button">←</button>
-          <div class="chip">Live Call (Free WebRTC)</div>
-          <button id="switchCallCamBtn" class="icon-btn" type="button">🔄</button>
+          <div class="title">Live Call</div>
+          <div style="display:flex;gap:8px;">
+            <button id="reconnectCallBtn" class="icon-btn" type="button" title="Reconnect">↻</button>
+            <button id="closeCallBtn" class="icon-btn" type="button">✕</button>
+          </div>
         </div>
 
         <div class="call-body">
-          <div class="video-grid">
-            <div class="pane">
-              <div class="pane-label">Your video</div>
-              <video id="localCallVideo" class="call-video" autoplay playsinline muted></video>
-            </div>
-            <div class="pane">
-              <div class="pane-label">Remote video</div>
-              <video id="remoteCallVideo" class="call-video" autoplay playsinline></video>
-            </div>
+          <div class="call-grid">
+            <div class="mini"><video id="localCallVideo" autoplay playsinline muted></video><label>Your Video</label></div>
+            <div class="mini"><video id="remoteCallVideo" autoplay playsinline></video><label>Remote Video</label></div>
           </div>
 
-          <p class="small">How to connect (free, no server): Caller clicks "Create Offer" and sends text to other person. Other person pastes it and clicks "Create Answer", then sends answer back. Caller pastes answer and clicks "Apply Incoming".</p>
+          <div class="row2">
+            <input id="roomCodeInput" placeholder="Room code" />
+            <input id="roomPinInput" placeholder="Room PIN" />
+          </div>
+          <div class="row2">
+            <button id="generateRoomBtn" class="btn secondary" type="button">Generate Room+PIN</button>
+            <button id="refreshCallMediaBtn" class="btn secondary" type="button">Refresh Cam+Mic</button>
+          </div>
+
+          <p class="small">Caller: Create Offer → share JSON. Receiver: paste in Incoming → Create Answer → share back. Caller: paste answer → Apply Incoming.</p>
 
           <label class="small">Incoming Signal</label>
-          <textarea id="incomingSignal" placeholder="Paste offer or answer JSON here"></textarea>
+          <textarea id="incomingSignal" placeholder="Paste offer/answer JSON here"></textarea>
 
-          <div class="call-actions">
+          <div class="row2">
             <button id="createOfferBtn" class="btn" type="button">Create Offer</button>
             <button id="createAnswerBtn" class="btn secondary" type="button">Create Answer</button>
           </div>
 
-          <button id="applyIncomingBtn" class="btn secondary" type="button">Apply Incoming</button>
+          <button id="applySignalBtn" class="btn secondary" type="button">Apply Incoming</button>
 
-          <label class="small">Your Outgoing Signal</label>
-          <textarea id="outgoingSignal" readonly placeholder="Generated signal will appear here"></textarea>
+          <label class="small">Outgoing Signal</label>
+          <textarea id="outgoingSignal" readonly placeholder="Generated signal appears here"></textarea>
 
-          <div class="call-actions">
-            <button id="copySignalBtn" class="btn secondary" type="button">Copy Outgoing</button>
-            <button id="endCallBtn" class="btn" type="button" style="background: linear-gradient(180deg,#fb7185,#e11d48); box-shadow:none;">End Call</button>
+          <div class="row2">
+            <button id="copySignalBtn" class="btn secondary" type="button">Copy Signal</button>
+            <button id="endCallBtn" class="btn" type="button" style="background:linear-gradient(180deg,#fb7185,#e11d48);box-shadow:none;">End Call</button>
           </div>
+
           <div id="callStatus" class="status"></div>
         </div>
       </div>
-    </section>
+
+      <div id="statsPane" class="stats-pane">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <div class="title">Upload Stats</div>
+          <button id="closeStatsBtn" class="icon-btn" type="button">✕</button>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-label">Total Uploads</div><div id="statTotal" class="stat-value">-</div></div>
+          <div class="stat-card"><div class="stat-label">Today Uploads</div><div id="statToday" class="stat-value">-</div></div>
+          <div class="stat-card"><div class="stat-label">Total Photos</div><div id="statPhotos" class="stat-value">-</div></div>
+          <div class="stat-card"><div class="stat-label">Total Videos</div><div id="statVideos" class="stat-value">-</div></div>
+          <div class="stat-card"><div class="stat-label">Total Failures</div><div id="statFails" class="stat-value">-</div></div>
+          <div class="stat-card"><div class="stat-label">Today Failures</div><div id="statTodayFails" class="stat-value">-</div></div>
+        </div>
+        <div class="stack">
+          <button id="refreshStatsBtn" class="btn" type="button">Refresh Stats</button>
+          <div id="statsStatus" class="status"></div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <canvas id="captureCanvas" class="hidden"></canvas>
@@ -297,125 +327,164 @@
     (() => {
       'use strict';
 
-      const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyHjlTYme6Xy0w9Nevo7vLV2EZpuK_ROetb4qsljWqpi7nGfqmD-HP1dhCrUC43VOk/exec';
+      const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyRjP_x1deRnkcOCMpvxtp_tJ0n2n0-HktqCNt2FpFGiuf0UhcEnih_8IIBNhWbUf7O/exec';
 
       const FILTERS = [
         { name: 'Natural', css: 'none' },
-        { name: 'Vivid', css: 'saturate(1.35) contrast(1.1)' },
-        { name: 'Cool', css: 'hue-rotate(10deg) saturate(1.12)' },
-        { name: 'Warm', css: 'sepia(.16) saturate(1.16)' },
+        { name: 'Vivid', css: 'saturate(1.35) contrast(1.12)' },
+        { name: 'Cool', css: 'hue-rotate(10deg) saturate(1.1)' },
+        { name: 'Warm', css: 'sepia(.18) saturate(1.15)' },
         { name: 'Mono', css: 'grayscale(1) contrast(1.2)' },
       ];
 
-      const PHOTO_MIME = 'image/jpeg';
-      const PHOTO_QUALITY = 0.92;
-      const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
-      const MAX_VIDEO_BYTES = 30 * 1024 * 1024;
-      const MAX_VIDEO_SECONDS = 20;
-
       const state = {
-        // Camera studio
-        camStream: null,
-        facingMode: 'environment',
+        stream: null,
         mode: 'photo',
+        facingMode: 'environment',
         filterIndex: 0,
+        gridEnabled: false,
+        torchEnabled: false,
+        timerSec: 0,
+        zoomSupported: false,
+        isRecording: false,
+        recorder: null,
+        chunks: [],
+        recTimer: null,
+        recStart: 0,
         capturedBlob: null,
         capturedUrl: null,
         capturedKind: null,
         isUploading: false,
-        recorder: null,
-        chunks: [],
-        isRecording: false,
-        recTimer: null,
-        recStartedAt: 0,
+        sessionId: 'sess_' + Math.random().toString(36).slice(2, 10),
 
-        // Live call
-        callFacingMode: 'user',
-        callLocalStream: null,
         callPeer: null,
-        callRemoteStream: null,
-        callIceCandidates: [],
+        callCandidates: [],
       };
 
-      // Screens
-      const welcomeScreen = document.getElementById('welcomeScreen');
-      const cameraScreen = document.getElementById('cameraScreen');
-      const callScreen = document.getElementById('callScreen');
+      // Elements
+      const liveVideo = document.getElementById('liveVideo');
+      const gridOverlay = document.getElementById('gridOverlay');
+      const focusRing = document.getElementById('focusRing');
+      const filterChip = document.getElementById('filterChip');
+      const toast = document.getElementById('toast');
 
-      // Welcome
-      const openCameraBtn = document.getElementById('openCameraBtn');
-      const openCallBtn = document.getElementById('openCallBtn');
+      const studioTab = document.getElementById('studioTab');
+      const callTab = document.getElementById('callTab');
+      const openStatsBtn = document.getElementById('openStatsBtn');
 
-      // Camera refs
-      const cameraVideo = document.getElementById('cameraVideo');
-      const captureCanvas = document.getElementById('captureCanvas');
+      const filterBtn = document.getElementById('filterBtn');
+      const flipBtn = document.getElementById('flipBtn');
+      const gridBtn = document.getElementById('gridBtn');
+      const torchBtn = document.getElementById('torchBtn');
+      const timer0Btn = document.getElementById('timer0Btn');
+      const timer3Btn = document.getElementById('timer3Btn');
+      const timer5Btn = document.getElementById('timer5Btn');
+      const zoomSlider = document.getElementById('zoomSlider');
+
+      const studioStatus = document.getElementById('studioStatus');
+      const leftLabel = document.getElementById('leftLabel');
+      const rightLabel = document.getElementById('rightLabel');
+      const uploadProgressWrap = document.getElementById('uploadProgressWrap');
+      const uploadProgressBar = document.getElementById('uploadProgressBar');
+
+      const photoModeBtn = document.getElementById('photoModeBtn');
+      const videoModeBtn = document.getElementById('videoModeBtn');
+      const shutterBtn = document.getElementById('shutterBtn');
+      const recordBtn = document.getElementById('recordBtn');
+
       const previewOverlay = document.getElementById('previewOverlay');
       const previewImg = document.getElementById('previewImg');
       const previewVid = document.getElementById('previewVid');
-      const statusText = document.getElementById('statusText');
-      const toast = document.getElementById('toast');
-      const filterChip = document.getElementById('filterChip');
-
-      const backFromCameraBtn = document.getElementById('backFromCameraBtn');
-      const photoModeBtn = document.getElementById('photoModeBtn');
-      const videoModeBtn = document.getElementById('videoModeBtn');
-      const filterBtn = document.getElementById('filterBtn');
-      const flipBtn = document.getElementById('flipBtn');
-      const shutterBtn = document.getElementById('shutterBtn');
-      const recordBtn = document.getElementById('recordBtn');
       const retakeBtn = document.getElementById('retakeBtn');
       const uploadBtn = document.getElementById('uploadBtn');
+      const againBtn = document.getElementById('againBtn');
+      const successPanel = document.getElementById('successPanel');
+      const captureCanvas = document.getElementById('captureCanvas');
 
-      const cameraErrorPanel = document.getElementById('cameraErrorPanel');
-      const cameraErrorText = document.getElementById('cameraErrorText');
-      const cameraRetryBtn = document.getElementById('cameraRetryBtn');
-      const cameraBackBtn = document.getElementById('cameraBackBtn');
-      const cameraSuccessPanel = document.getElementById('cameraSuccessPanel');
-      const captureAnotherBtn = document.getElementById('captureAnotherBtn');
+      const permissionPanel = document.getElementById('permissionPanel');
+      const permissionText = document.getElementById('permissionText');
+      const retryPermissionBtn = document.getElementById('retryPermissionBtn');
 
-      // Call refs
-      const backFromCallBtn = document.getElementById('backFromCallBtn');
-      const switchCallCamBtn = document.getElementById('switchCallCamBtn');
+      const callPane = document.getElementById('callPane');
+      const closeCallBtn = document.getElementById('closeCallBtn');
+      const reconnectCallBtn = document.getElementById('reconnectCallBtn');
+      const refreshCallMediaBtn = document.getElementById('refreshCallMediaBtn');
       const localCallVideo = document.getElementById('localCallVideo');
       const remoteCallVideo = document.getElementById('remoteCallVideo');
+      const roomCodeInput = document.getElementById('roomCodeInput');
+      const roomPinInput = document.getElementById('roomPinInput');
+      const generateRoomBtn = document.getElementById('generateRoomBtn');
       const incomingSignal = document.getElementById('incomingSignal');
       const outgoingSignal = document.getElementById('outgoingSignal');
       const createOfferBtn = document.getElementById('createOfferBtn');
       const createAnswerBtn = document.getElementById('createAnswerBtn');
-      const applyIncomingBtn = document.getElementById('applyIncomingBtn');
+      const applySignalBtn = document.getElementById('applySignalBtn');
       const copySignalBtn = document.getElementById('copySignalBtn');
       const endCallBtn = document.getElementById('endCallBtn');
       const callStatus = document.getElementById('callStatus');
 
-      function showScreen(el) {
-        welcomeScreen.classList.remove('active');
-        cameraScreen.classList.remove('active');
-        callScreen.classList.remove('active');
-        el.classList.add('active');
-      }
+      const statsPane = document.getElementById('statsPane');
+      const closeStatsBtn = document.getElementById('closeStatsBtn');
+      const refreshStatsBtn = document.getElementById('refreshStatsBtn');
+      const statsStatus = document.getElementById('statsStatus');
+      const statTotal = document.getElementById('statTotal');
+      const statToday = document.getElementById('statToday');
+      const statPhotos = document.getElementById('statPhotos');
+      const statVideos = document.getElementById('statVideos');
+      const statFails = document.getElementById('statFails');
+      const statTodayFails = document.getElementById('statTodayFails');
 
-      function showToast(message, type = '') {
-        toast.textContent = message;
+      function showToast(msg, type = '') {
+        toast.textContent = msg;
         toast.className = `toast ${type}`.trim();
         toast.style.display = 'block';
-        clearTimeout(showToast._t);
-        showToast._t = setTimeout(() => { toast.style.display = 'none'; }, 3600);
+        clearTimeout(showToast.t);
+        showToast.t = setTimeout(() => (toast.style.display = 'none'), 3800);
       }
 
       function setStatus(msg, loading = false) {
-        statusText.innerHTML = msg ? (loading ? `<span class="loader"></span>${msg}` : msg) : '';
+        studioStatus.innerHTML = msg ? (loading ? `<span class="loader"></span>${msg}` : msg) : '';
       }
 
       function setCallStatus(msg, loading = false) {
         callStatus.innerHTML = msg ? (loading ? `<span class="loader"></span>${msg}` : msg) : '';
       }
 
-      function currentFilter() { return FILTERS[state.filterIndex]; }
+      function getNetworkLevel() {
+        const c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        if (!c) return 'high';
+        const type = c.effectiveType || '';
+        if (type.includes('2g') || c.downlink <= 0.7) return 'low';
+        if (type === '3g' || c.downlink <= 1.5) return 'medium';
+        return 'high';
+      }
+
+      function getAdaptivePhotoSettings() {
+        const level = getNetworkLevel();
+        if (level === 'low') return { scale: 0.6, quality: 0.76, tag: 'Low Net' };
+        if (level === 'medium') return { scale: 0.78, quality: 0.85, tag: 'Mid Net' };
+        return { scale: 1, quality: 0.92, tag: 'HD' };
+      }
 
       function applyFilter() {
-        const f = currentFilter();
-        cameraVideo.style.filter = f.css;
+        const f = FILTERS[state.filterIndex];
+        liveVideo.style.filter = f.css;
         filterChip.textContent = `Filter: ${f.name}`;
+      }
+
+      function updateModeUI() {
+        const photo = state.mode === 'photo';
+        photoModeBtn.classList.toggle('active', photo);
+        videoModeBtn.classList.toggle('active', !photo);
+        shutterBtn.classList.toggle('hidden', !photo);
+        recordBtn.classList.toggle('hidden', photo);
+        leftLabel.textContent = photo ? 'Photo' : (state.isRecording ? 'Recording...' : 'Video');
+      }
+
+      function setTimerButtons() {
+        timer0Btn.classList.toggle('active', state.timerSec === 0);
+        timer3Btn.classList.toggle('active', state.timerSec === 3);
+        timer5Btn.classList.toggle('active', state.timerSec === 5);
       }
 
       function clearCaptureMemory() {
@@ -428,161 +497,250 @@
         previewVid.removeAttribute('src');
       }
 
-      function stopCamTracks() {
-        if (!state.camStream) return;
-        state.camStream.getTracks().forEach(t => t.stop());
-        state.camStream = null;
+      function stopMainStream() {
+        if (!state.stream) return;
+        state.stream.getTracks().forEach((t) => t.stop());
+        state.stream = null;
       }
 
-      function cameraErrorMessage(error) {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return "Your browser doesn't support camera API.";
-        if (window.isSecureContext === false) return 'Camera needs HTTPS. Open website over HTTPS.';
-        const name = error && error.name ? error.name : '';
-        if (name === 'NotAllowedError') return 'Camera permission denied. Please allow access in browser settings.';
-        if (name === 'NotFoundError') return 'No camera detected on this device.';
-        if (name === 'NotReadableError') return 'Camera is busy in another app. Close it and retry.';
-        return 'Unable to start camera. Please try again.';
+      function setupZoomAndTorch() {
+        state.zoomSupported = false;
+        zoomSlider.disabled = true;
+        torchBtn.disabled = true;
+        torchBtn.classList.remove('active');
+        state.torchEnabled = false;
+
+        const track = state.stream && state.stream.getVideoTracks ? state.stream.getVideoTracks()[0] : null;
+        if (!track || !track.getCapabilities) return;
+
+        const caps = track.getCapabilities();
+        if (caps.zoom) {
+          state.zoomSupported = true;
+          zoomSlider.disabled = false;
+          zoomSlider.min = String(caps.zoom.min || 1);
+          zoomSlider.max = String(caps.zoom.max || 1);
+          zoomSlider.step = String(caps.zoom.step || 0.1);
+          const settings = track.getSettings();
+          zoomSlider.value = String(settings.zoom || caps.zoom.min || 1);
+        }
+
+        if (caps.torch) {
+          torchBtn.disabled = false;
+        }
       }
 
-      async function startCameraStudio() {
-        cameraErrorPanel.classList.remove('active');
-        cameraSuccessPanel.classList.remove('active');
+      async function requestMainMedia() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error("Browser doesn't support camera API.");
+        if (window.isSecureContext === false) throw new Error('HTTPS is required for camera and microphone.');
 
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('Camera API unsupported');
-        if (window.isSecureContext === false) throw new Error('HTTPS required');
-
-        stopCamTracks();
+        stopMainStream();
 
         const stream = await navigator.mediaDevices.getUserMedia({
-          audio: state.mode === 'video',
+          audio: true,
           video: {
             facingMode: { ideal: state.facingMode },
             width: { ideal: 1920 },
             height: { ideal: 1080 },
-          }
+          },
         });
 
-        state.camStream = stream;
-        cameraVideo.srcObject = stream;
-        await cameraVideo.play();
+        state.stream = stream;
+        liveVideo.srcObject = stream;
+        localCallVideo.srcObject = stream;
+        await liveVideo.play().catch(() => {});
+        await localCallVideo.play().catch(() => {});
         applyFilter();
+
+        const adaptive = getAdaptivePhotoSettings();
+        rightLabel.textContent = adaptive.tag;
+        setupZoomAndTorch();
       }
 
-      async function openCameraStudio() {
-        showScreen(cameraScreen);
-        previewOverlay.classList.remove('active');
-        clearCaptureMemory();
-        setStatus('');
+      async function initPermissionsOnLoad() {
+        permissionPanel.classList.add('active');
+        permissionText.textContent = 'Please allow camera + microphone once. This prevents repeated prompts later.';
+        setStatus('Requesting camera & mic...', true);
         try {
-          await startCameraStudio();
-          showToast('Camera ready.', 'success');
+          await requestMainMedia();
+          permissionPanel.classList.remove('active');
+          setStatus('Camera + Mic ready ✓');
+          showToast('Permissions granted.', 'success');
         } catch (err) {
-          cameraErrorText.textContent = cameraErrorMessage(err);
-          cameraErrorPanel.classList.add('active');
+          const msg = err && err.message ? err.message : 'Permission request failed.';
+          permissionText.textContent = msg + ' Tap "Grant Permission" and allow both camera and mic.';
+          setStatus('Permission required');
         }
       }
 
-      function updateModeUI() {
-        const photo = state.mode === 'photo';
-        photoModeBtn.classList.toggle('active', photo);
-        videoModeBtn.classList.toggle('active', !photo);
-        shutterBtn.classList.toggle('hidden', !photo);
-        recordBtn.classList.toggle('hidden', photo);
-      }
+      function pauseLive() { if (liveVideo.srcObject) liveVideo.pause(); }
+      function resumeLive() { if (liveVideo.srcObject) liveVideo.play().catch(() => {}); }
 
-      async function setMode(mode) {
+      async function flipCamera() {
         if (state.isRecording || state.isUploading) return;
-        state.mode = mode;
-        updateModeUI();
-        await openCameraStudio();
+        state.facingMode = state.facingMode === 'environment' ? 'user' : 'environment';
+        try {
+          await requestMainMedia();
+          if (state.callPeer) {
+            const v = state.stream.getVideoTracks()[0];
+            const a = state.stream.getAudioTracks()[0];
+            const vs = state.callPeer.getSenders().find((s) => s.track && s.track.kind === 'video');
+            const as = state.callPeer.getSenders().find((s) => s.track && s.track.kind === 'audio');
+            if (vs && v) await vs.replaceTrack(v);
+            if (as && a) await as.replaceTrack(a);
+          }
+          showToast(state.facingMode === 'environment' ? 'Rear camera selected.' : 'Front camera selected.', 'success');
+        } catch (err) {
+          showToast(err && err.message ? err.message : 'Could not switch camera.', 'error');
+        }
       }
 
-      function cycleFilter() {
-        if (state.isRecording || state.isUploading) return;
-        state.filterIndex = (state.filterIndex + 1) % FILTERS.length;
-        applyFilter();
+      async function setTorch(enabled) {
+        const track = state.stream && state.stream.getVideoTracks ? state.stream.getVideoTracks()[0] : null;
+        if (!track) return;
+        try {
+          await track.applyConstraints({ advanced: [{ torch: !!enabled }] });
+          state.torchEnabled = !!enabled;
+          torchBtn.classList.toggle('active', state.torchEnabled);
+        } catch (_) {
+          showToast('Torch not supported on this device.', 'error');
+          state.torchEnabled = false;
+          torchBtn.classList.remove('active');
+        }
       }
 
-      function pauseLivePreview() { if (cameraVideo.srcObject) cameraVideo.pause(); }
-      function resumeLivePreview() { if (cameraVideo.srcObject) cameraVideo.play().catch(() => {}); }
+      async function setZoom(value) {
+        const track = state.stream && state.stream.getVideoTracks ? state.stream.getVideoTracks()[0] : null;
+        if (!track || !state.zoomSupported) return;
+        try {
+          await track.applyConstraints({ advanced: [{ zoom: Number(value) }] });
+        } catch (_) {}
+      }
 
-      function capturePhoto() {
+      function showFocusRing(x, y) {
+        const rect = liveVideo.getBoundingClientRect();
+        focusRing.style.left = `${x - rect.left}px`;
+        focusRing.style.top = `${y - rect.top}px`;
+        focusRing.classList.add('show');
+        clearTimeout(showFocusRing.t);
+        showFocusRing.t = setTimeout(() => focusRing.classList.remove('show'), 500);
+      }
+
+      async function runTimerIfNeeded() {
+        if (state.timerSec === 0) return true;
+        for (let i = state.timerSec; i > 0; i--) {
+          setStatus(`Capturing in ${i}...`);
+          await new Promise((r) => setTimeout(r, 1000));
+        }
+        return true;
+      }
+
+      function capturePhotoBlob() {
         return new Promise((resolve, reject) => {
-          const w = cameraVideo.videoWidth;
-          const h = cameraVideo.videoHeight;
-          if (!w || !h) return reject(new Error('Camera not ready.'));
+          const w = liveVideo.videoWidth;
+          const h = liveVideo.videoHeight;
+          if (!w || !h) return reject(new Error('Camera not ready yet.'));
 
-          captureCanvas.width = w;
-          captureCanvas.height = h;
+          const adaptive = getAdaptivePhotoSettings();
+          const cw = Math.max(1, Math.floor(w * adaptive.scale));
+          const ch = Math.max(1, Math.floor(h * adaptive.scale));
+
+          captureCanvas.width = cw;
+          captureCanvas.height = ch;
           const ctx = captureCanvas.getContext('2d');
-          if (!ctx) return reject(new Error('Capture failed.'));
+          if (!ctx) return reject(new Error('Failed to initialize capture canvas.'));
 
-          ctx.filter = currentFilter().css;
-          ctx.drawImage(cameraVideo, 0, 0, w, h);
+          ctx.filter = FILTERS[state.filterIndex].css;
+          ctx.drawImage(liveVideo, 0, 0, cw, ch);
 
           captureCanvas.toBlob((blob) => {
-            if (!blob) return reject(new Error('Invalid photo.'));
-            if (blob.size > MAX_PHOTO_BYTES) return reject(new Error('Photo too large. Retake please.'));
+            if (!blob) return reject(new Error('Invalid image capture.'));
+            if (blob.size > 10 * 1024 * 1024) return reject(new Error('Photo too large. Please retake.'));
             resolve(blob);
-          }, PHOTO_MIME, PHOTO_QUALITY);
+          }, 'image/jpeg', adaptive.quality);
         });
       }
 
+      async function takePhoto() {
+        if (state.isUploading || state.isRecording) return;
+        try {
+          await runTimerIfNeeded();
+          const blob = await capturePhotoBlob();
+          clearCaptureMemory();
+          state.capturedBlob = blob;
+          state.capturedKind = 'photo';
+          state.capturedUrl = URL.createObjectURL(blob);
+          previewVid.classList.add('hidden');
+          previewImg.classList.remove('hidden');
+          previewImg.src = state.capturedUrl;
+          previewImg.style.filter = FILTERS[state.filterIndex].css;
+          previewOverlay.classList.add('active');
+          pauseLive();
+          setStatus('Photo preview ready.');
+        } catch (err) {
+          showToast(err && err.message ? err.message : 'Capture failed.', 'error');
+        }
+      }
+
       function recordingMime() {
-        const types = [
-          'video/webm;codecs=vp9,opus',
-          'video/webm;codecs=vp8,opus',
-          'video/webm',
-          'video/mp4'
-        ];
+        const types = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4'];
         for (const t of types) {
           if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) return t;
         }
         return '';
       }
 
-      function startRecording() {
+      async function startRecording() {
+        if (state.isUploading || state.isRecording) return;
         if (!window.MediaRecorder) return showToast('Video recording unsupported on this browser.', 'error');
-        if (!state.camStream) return showToast('Camera not ready.', 'error');
+        if (!state.stream) return showToast('Camera + mic not ready.', 'error');
+
+        const hasAudio = state.stream.getAudioTracks().length > 0;
+        if (!hasAudio) {
+          showToast('Microphone not available. Please allow mic permission.', 'error');
+          return;
+        }
+
+        await runTimerIfNeeded();
 
         try {
-          const mimeType = recordingMime();
           state.chunks = [];
-          state.recorder = mimeType ? new MediaRecorder(state.camStream, { mimeType }) : new MediaRecorder(state.camStream);
+          const mimeType = recordingMime();
+          state.recorder = mimeType ? new MediaRecorder(state.stream, { mimeType }) : new MediaRecorder(state.stream);
           state.recorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) state.chunks.push(e.data); };
           state.recorder.onstop = () => {
-            const outMime = state.recorder.mimeType || 'video/webm';
-            const blob = new Blob(state.chunks, { type: outMime });
+            const m = state.recorder && state.recorder.mimeType ? state.recorder.mimeType : 'video/webm';
+            const blob = new Blob(state.chunks, { type: m });
             if (!blob || blob.size === 0) return showToast('Invalid video capture.', 'error');
-            if (blob.size > MAX_VIDEO_BYTES) return showToast('Video too large. Record shorter clip.', 'error');
+            if (blob.size > 30 * 1024 * 1024) return showToast('Video too large. Record shorter clip.', 'error');
 
             clearCaptureMemory();
             state.capturedBlob = blob;
             state.capturedKind = 'video';
             state.capturedUrl = URL.createObjectURL(blob);
-
             previewImg.classList.add('hidden');
             previewVid.classList.remove('hidden');
             previewVid.src = state.capturedUrl;
             previewOverlay.classList.add('active');
-            pauseLivePreview();
-            setStatus('Video preview ready. Tap Upload when ready.');
+            pauseLive();
+            setStatus('Video preview ready.');
           };
 
           state.recorder.start(250);
           state.isRecording = true;
-          state.recStartedAt = Date.now();
+          state.recStart = Date.now();
           recordBtn.classList.add('active');
+          updateModeUI();
           setStatus('Recording...');
 
           state.recTimer = setInterval(() => {
-            const sec = Math.floor((Date.now() - state.recStartedAt) / 1000);
-            if (sec >= MAX_VIDEO_SECONDS) {
+            const s = Math.floor((Date.now() - state.recStart) / 1000);
+            leftLabel.textContent = `Rec ${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+            if (s >= MAX_VIDEO_SECONDS) {
               stopRecording();
               showToast('Recording stopped at 20 seconds.', 'success');
             }
-          }, 300);
-        } catch (_) {
+          }, 250);
+        } catch (err) {
           showToast('Could not start recording.', 'error');
         }
       }
@@ -594,69 +752,134 @@
         clearInterval(state.recTimer);
         state.recTimer = null;
         if (state.recorder && state.recorder.state !== 'inactive') state.recorder.stop();
+        updateModeUI();
+      }
+
+      function retake() {
+        clearCaptureMemory();
+        previewOverlay.classList.remove('active');
+        successPanel.classList.remove('active');
+        uploadProgressWrap.style.display = 'none';
+        uploadProgressBar.style.width = '0%';
+        setStatus('');
+        resumeLive();
       }
 
       function blobToDataUrl(blob) {
         return new Promise((resolve, reject) => {
-          const fr = new FileReader();
-          fr.onloadend = () => typeof fr.result === 'string' ? resolve(fr.result) : reject(new Error('Read failed'));
-          fr.onerror = () => reject(new Error('Read failed'));
-          fr.readAsDataURL(blob);
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            if (typeof reader.result !== 'string') return reject(new Error('Could not read capture data.'));
+            resolve(reader.result);
+          };
+          reader.onerror = () => reject(new Error('Could not read capture data.'));
+          reader.readAsDataURL(blob);
         });
       }
 
-      async function uploadFallback(payload) {
+      function uploadWithXHR(payload, onProgress) {
+        return new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', GOOGLE_APPS_SCRIPT_URL, true);
+          xhr.setRequestHeader('Content-Type', 'text/plain;charset=utf-8');
+
+          xhr.upload.onprogress = (evt) => {
+            if (evt.lengthComputable && onProgress) {
+              const percent = Math.max(0, Math.min(100, Math.round((evt.loaded / evt.total) * 100)));
+              onProgress(percent);
+            }
+          };
+
+          xhr.onreadystatechange = () => {
+            if (xhr.readyState !== 4) return;
+            if (xhr.status >= 200 && xhr.status < 300) {
+              try {
+                const json = JSON.parse(xhr.responseText || '{}');
+                if (json.success !== true) return reject(new Error(json.error || 'Upload failed.'));
+                resolve(json);
+              } catch (_) {
+                reject(new Error('Invalid upload response.'));
+              }
+            } else {
+              reject(new Error('Upload request failed.'));
+            }
+          };
+
+          xhr.onerror = () => reject(new Error('Network error during upload.'));
+          xhr.send(JSON.stringify(payload));
+        });
+      }
+
+      async function uploadFallbackNoCors(payload) {
         const fd = new FormData();
         fd.append('fileDataUrl', payload.fileDataUrl);
         fd.append('mimeType', payload.mimeType);
         fd.append('sizeBytes', String(payload.sizeBytes));
         fd.append('fileKind', payload.fileKind);
         fd.append('filterName', payload.filterName);
-
+        fd.append('origin', payload.origin);
+        fd.append('sessionId', payload.sessionId);
         await fetch(GOOGLE_APPS_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: fd });
       }
 
       async function uploadCapture() {
         if (state.isUploading) return;
         if (!state.capturedBlob || !state.capturedKind) return showToast('No capture to upload.', 'error');
-        if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes('REPLACE_WITH')) return showToast('Google Apps Script URL is not configured.', 'error');
-        if (!navigator.onLine) return showToast('You are offline.', 'error');
+        if (!navigator.onLine) return showToast('No internet connection.', 'error');
+        if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes('REPLACE_WITH')) return showToast('Apps Script URL not configured.', 'error');
 
         state.isUploading = true;
         uploadBtn.disabled = true;
         retakeBtn.disabled = true;
         setStatus('Uploading...', true);
+        uploadProgressWrap.style.display = 'block';
+        uploadProgressBar.style.width = '0%';
 
         try {
           const dataUrl = await blobToDataUrl(state.capturedBlob);
           const payload = {
             fileDataUrl: dataUrl,
-            mimeType: state.capturedBlob.type || (state.capturedKind === 'photo' ? PHOTO_MIME : 'video/webm'),
+            mimeType: state.capturedBlob.type || (state.capturedKind === 'photo' ? 'image/jpeg' : 'video/webm'),
             sizeBytes: state.capturedBlob.size,
             fileKind: state.capturedKind,
-            filterName: currentFilter().name,
+            filterName: FILTERS[state.filterIndex].name,
+            origin: window.location.origin,
+            sessionId: state.sessionId,
           };
 
-          let ok = false;
-          try {
-            const res = await fetch(GOOGLE_APPS_SCRIPT_URL, {
-              method: 'POST',
-              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-              body: JSON.stringify(payload),
-            });
-            const out = await res.json();
-            if (!res.ok || !out || out.success !== true) throw new Error((out && out.error) || 'Upload failed');
-            ok = true;
-          } catch (_) {
-            await uploadFallback(payload);
-            ok = true;
-            showToast('Upload request sent. Check Drive in a few seconds.', 'success');
+          const attempts = 3;
+          let done = false;
+          let lastError = null;
+
+          for (let i = 1; i <= attempts; i++) {
+            try {
+              setStatus(`Uploading... Attempt ${i}/${attempts}`, true);
+              await uploadWithXHR(payload, (p) => {
+                const normalized = Math.max(5, p);
+                uploadProgressBar.style.width = normalized + '%';
+              });
+              done = true;
+              break;
+            } catch (err) {
+              lastError = err;
+              uploadProgressBar.style.width = Math.max(8, Math.min(95, i * 30)) + '%';
+              await new Promise((r) => setTimeout(r, 600 * i));
+            }
           }
 
-          if (ok) {
+          if (!done) {
+            await uploadFallbackNoCors(payload);
+            done = true;
+            showToast('Upload request sent. Please verify in Drive.', 'success');
+          }
+
+          if (done) {
+            uploadProgressBar.style.width = '100%';
             setStatus('Uploaded successfully ✓');
             clearCaptureMemory();
-            cameraSuccessPanel.classList.add('active');
+            successPanel.classList.add('active');
+          } else {
+            throw lastError || new Error('Upload failed after retries.');
           }
         } catch (err) {
           showToast(err && err.message ? err.message : 'Upload failed.', 'error');
@@ -665,85 +888,24 @@
           state.isUploading = false;
           uploadBtn.disabled = false;
           retakeBtn.disabled = false;
+          setTimeout(() => {
+            if (!state.isUploading) {
+              uploadProgressWrap.style.display = 'none';
+              uploadProgressBar.style.width = '0%';
+            }
+          }, 1200);
         }
-      }
-
-      async function doPhotoCapture() {
-        try {
-          const blob = await capturePhoto();
-          clearCaptureMemory();
-          state.capturedBlob = blob;
-          state.capturedKind = 'photo';
-          state.capturedUrl = URL.createObjectURL(blob);
-
-          previewVid.classList.add('hidden');
-          previewImg.classList.remove('hidden');
-          previewImg.src = state.capturedUrl;
-          previewImg.style.filter = currentFilter().css;
-
-          previewOverlay.classList.add('active');
-          pauseLivePreview();
-          setStatus('Photo preview ready. Tap Upload when ready.');
-        } catch (err) {
-          showToast(err && err.message ? err.message : 'Capture failed.', 'error');
-        }
-      }
-
-      function retakeCapture() {
-        clearCaptureMemory();
-        cameraSuccessPanel.classList.remove('active');
-        previewOverlay.classList.remove('active');
-        setStatus('');
-        resumeLivePreview();
-      }
-
-      async function flipCamera() {
-        if (state.isRecording || state.isUploading) return;
-        state.facingMode = state.facingMode === 'environment' ? 'user' : 'environment';
-        try {
-          await startCameraStudio();
-          showToast(state.facingMode === 'environment' ? 'Rear camera selected.' : 'Front camera selected.', 'success');
-        } catch (err) {
-          showToast(cameraErrorMessage(err), 'error');
-        }
-      }
-
-      function closeCameraStudio() {
-        if (state.isRecording) stopRecording();
-        stopCamTracks();
-        clearCaptureMemory();
-        previewOverlay.classList.remove('active');
-        cameraSuccessPanel.classList.remove('active');
-        setStatus('');
-        showScreen(welcomeScreen);
       }
 
       // Live Call
-      async function ensureCallLocalStream() {
-        if (state.callLocalStream) return state.callLocalStream;
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('Browser does not support camera/mic API.');
-        if (window.isSecureContext === false) throw new Error('Live call needs HTTPS.');
-
-        const videoConstraints = {
-          facingMode: { ideal: state.callFacingMode },
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        };
-
-        let stream;
-        try {
-          // Preferred: camera + mic
-          stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: videoConstraints });
-        } catch (err) {
-          // Fallback: camera only (if mic denied/unavailable)
-          stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: videoConstraints });
-          setCallStatus('Mic unavailable/denied. Continuing with video only.');
+      function requireRoom() {
+        const code = (roomCodeInput.value || '').trim();
+        const pin = (roomPinInput.value || '').trim();
+        if (!code || !pin) {
+          setCallStatus('Room code and PIN are required.');
+          return null;
         }
-
-        state.callLocalStream = stream;
-        localCallVideo.srcObject = stream;
-        await localCallVideo.play().catch(() => {});
-        return stream;
+        return { roomCode: code, roomPin: pin };
       }
 
       function cleanupPeer() {
@@ -754,258 +916,310 @@
           try { state.callPeer.close(); } catch (_) {}
           state.callPeer = null;
         }
-        state.callRemoteStream = null;
         remoteCallVideo.srcObject = null;
-      }
-
-      function stopCallLocal() {
-        if (!state.callLocalStream) return;
-        state.callLocalStream.getTracks().forEach(t => t.stop());
-        state.callLocalStream = null;
-        localCallVideo.srcObject = null;
       }
 
       function createPeer() {
         cleanupPeer();
-        state.callIceCandidates = [];
+        state.callCandidates = [];
 
         const pc = new RTCPeerConnection({
-          iceServers: [
-            { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
-          ],
+          iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }],
         });
         state.callPeer = pc;
 
         const remoteStream = new MediaStream();
-        state.callRemoteStream = remoteStream;
         remoteCallVideo.srcObject = remoteStream;
 
         pc.ontrack = (ev) => {
-          ev.streams[0].getTracks().forEach((track) => remoteStream.addTrack(track));
+          ev.streams[0].getTracks().forEach((t) => remoteStream.addTrack(t));
         };
-
         pc.onicecandidate = (ev) => {
-          if (ev.candidate) {
-            state.callIceCandidates.push(ev.candidate.toJSON());
-          }
+          if (ev.candidate) state.callCandidates.push(ev.candidate.toJSON());
         };
-
         pc.onconnectionstatechange = () => {
           const s = pc.connectionState;
           if (s === 'connected') setCallStatus('Call connected ✓');
           else if (s === 'connecting') setCallStatus('Connecting...', true);
-          else if (s === 'disconnected') setCallStatus('Connection lost. Reconnect with new offer.');
-          else if (s === 'failed') setCallStatus('Connection failed. Try same network or regenerate offer.');
+          else if (s === 'disconnected' || s === 'failed') setCallStatus('Call disconnected. Tap reconnect.', false);
         };
 
+        if (state.stream) state.stream.getTracks().forEach((t) => pc.addTrack(t, state.stream));
         return pc;
       }
 
-      async function waitIceDone(pc) {
+      async function waitIce(pc) {
         if (pc.iceGatheringState === 'complete') return;
         await new Promise((resolve) => {
-          const t = setTimeout(() => {
+          const timeout = setTimeout(done, 8000);
+          function onChange() { if (pc.iceGatheringState === 'complete') done(); }
+          function done() {
+            clearTimeout(timeout);
             pc.removeEventListener('icegatheringstatechange', onChange);
             resolve();
-          }, 8000);
-          function onChange() {
-            if (pc.iceGatheringState === 'complete') {
-              clearTimeout(t);
-              pc.removeEventListener('icegatheringstatechange', onChange);
-              resolve();
-            }
           }
           pc.addEventListener('icegatheringstatechange', onChange);
         });
       }
 
       async function applyCandidates(pc, candidates) {
-        if (!pc || !Array.isArray(candidates) || !candidates.length) return;
+        if (!pc || !Array.isArray(candidates)) return;
         for (const c of candidates) {
-          try {
-            await pc.addIceCandidate(new RTCIceCandidate(c));
-          } catch (_) {
-            // ignore incompatible candidate lines
-          }
+          try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch (_) {}
         }
       }
 
-      function buildSignalPayload(type, pc) {
+      function buildSignal(type, pc, room) {
         return {
           type,
-          sdp: pc && pc.localDescription ? pc.localDescription.sdp : '',
-          candidates: Array.isArray(state.callIceCandidates) ? state.callIceCandidates : [],
+          sdp: pc.localDescription ? pc.localDescription.sdp : '',
+          candidates: state.callCandidates,
+          roomCode: room.roomCode,
+          roomPin: room.roomPin,
           generatedAt: new Date().toISOString(),
         };
       }
 
-      async function createOfferFlow() {
-        try {
-          setCallStatus('Preparing offer...', true);
-          const stream = await ensureCallLocalStream();
-          const pc = createPeer();
-          stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+      function validateIncomingRoom(incoming) {
+        const room = requireRoom();
+        if (!room) return false;
+        if (!incoming.roomCode || !incoming.roomPin) {
+          setCallStatus('Incoming signal has no room credentials.');
+          return false;
+        }
+        if (incoming.roomCode !== room.roomCode || incoming.roomPin !== room.roomPin) {
+          setCallStatus('Room code or PIN does not match.');
+          return false;
+        }
+        return true;
+      }
 
+      async function createOffer(isReconnect = false) {
+        const room = requireRoom();
+        if (!room) return;
+        try {
+          setCallStatus(isReconnect ? 'Reconnecting...' : 'Creating offer...', true);
+          await requestMainMedia();
+          const pc = createPeer();
           const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
           await pc.setLocalDescription(offer);
-          await waitIceDone(pc);
-
-          outgoingSignal.value = JSON.stringify(buildSignalPayload('offer', pc), null, 2);
-          setCallStatus('Offer generated. Send this to second device.');
+          await waitIce(pc);
+          outgoingSignal.value = JSON.stringify(buildSignal('offer', pc, room), null, 2);
+          setCallStatus(isReconnect ? 'Reconnect offer ready. Send to receiver.' : 'Offer ready. Send to receiver.');
         } catch (err) {
-          const msg = err && err.message ? err.message : 'Unknown error';
-          setCallStatus('Offer creation failed: ' + msg);
+          setCallStatus('Offer failed: ' + (err && err.message ? err.message : 'unknown'));
         }
       }
 
-      async function createAnswerFlow() {
+      async function createAnswer() {
+        const room = requireRoom();
+        if (!room) return;
         try {
-          const parsed = JSON.parse(incomingSignal.value || '{}');
-          if (parsed.type !== 'offer' || !parsed.sdp) return setCallStatus('Paste a valid offer first.');
+          const incoming = JSON.parse(incomingSignal.value || '{}');
+          if (incoming.type !== 'offer' || !incoming.sdp) return setCallStatus('Paste valid offer first.');
+          if (!validateIncomingRoom(incoming)) return;
 
-          setCallStatus('Preparing answer...', true);
-          const stream = await ensureCallLocalStream();
+          setCallStatus('Creating answer...', true);
+          await requestMainMedia();
           const pc = createPeer();
-          stream.getTracks().forEach((track) => pc.addTrack(track, stream));
-
-          await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: parsed.sdp }));
-          await applyCandidates(pc, parsed.candidates);
-
+          await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: incoming.sdp }));
+          await applyCandidates(pc, incoming.candidates);
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
-          await waitIceDone(pc);
-
-          outgoingSignal.value = JSON.stringify(buildSignalPayload('answer', pc), null, 2);
-          setCallStatus('Answer generated. Send this back to caller.');
+          await waitIce(pc);
+          outgoingSignal.value = JSON.stringify(buildSignal('answer', pc, room), null, 2);
+          setCallStatus('Answer ready. Send to caller.');
         } catch (err) {
-          const msg = err && err.message ? err.message : 'Unknown error';
-          setCallStatus('Answer creation failed: ' + msg);
+          setCallStatus('Answer failed: ' + (err && err.message ? err.message : 'unknown'));
         }
       }
 
-      async function applyIncomingFlow() {
+      async function applyIncoming() {
+        const room = requireRoom();
+        if (!room) return;
         try {
-          const parsed = JSON.parse(incomingSignal.value || '{}');
-          if (!state.callPeer) return setCallStatus('Start offer/answer flow first.');
+          if (!state.callPeer) return setCallStatus('Create offer/answer first.');
+          const incoming = JSON.parse(incomingSignal.value || '{}');
+          if (!validateIncomingRoom(incoming)) return;
 
-          if (parsed.type === 'answer' && parsed.sdp) {
-            await state.callPeer.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: parsed.sdp }));
-            await applyCandidates(state.callPeer, parsed.candidates);
+          if (incoming.type === 'answer' && incoming.sdp) {
+            await state.callPeer.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: incoming.sdp }));
+            await applyCandidates(state.callPeer, incoming.candidates);
             setCallStatus('Answer applied. Connecting...', true);
             return;
           }
 
-          if (parsed.type === 'offer' && parsed.sdp) {
-            const stream = await ensureCallLocalStream();
-            const pc = state.callPeer;
-            if (!pc.getSenders().length) stream.getTracks().forEach((track) => pc.addTrack(track, stream));
-            await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: parsed.sdp }));
-            await applyCandidates(pc, parsed.candidates);
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-            await waitIceDone(pc);
-            outgoingSignal.value = JSON.stringify(buildSignalPayload('answer', pc), null, 2);
-            setCallStatus('Offer applied. Share generated answer now.');
+          if (incoming.type === 'offer' && incoming.sdp) {
+            await state.callPeer.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: incoming.sdp }));
+            await applyCandidates(state.callPeer, incoming.candidates);
+            const ans = await state.callPeer.createAnswer();
+            await state.callPeer.setLocalDescription(ans);
+            await waitIce(state.callPeer);
+            outgoingSignal.value = JSON.stringify(buildSignal('answer', state.callPeer, room), null, 2);
+            setCallStatus('Offer applied. Share generated answer.');
             return;
           }
 
-          setCallStatus('Invalid signal JSON.');
+          setCallStatus('Invalid signal payload.');
         } catch (err) {
-          const msg = err && err.message ? err.message : 'Unknown error';
-          setCallStatus('Apply failed: ' + msg);
+          setCallStatus('Apply failed: ' + (err && err.message ? err.message : 'unknown'));
         }
       }
 
-      async function switchCallCamera() {
-        try {
-          state.callFacingMode = state.callFacingMode === 'user' ? 'environment' : 'user';
-          stopCallLocal();
-          const stream = await ensureCallLocalStream();
-
-          if (state.callPeer) {
-            const newVideoTrack = stream.getVideoTracks()[0];
-            if (newVideoTrack) {
-              const sender = state.callPeer.getSenders().find((s) => s.track && s.track.kind === 'video');
-              if (sender) {
-                await sender.replaceTrack(newVideoTrack);
-              }
-            }
-          }
-
-          setCallStatus(state.callFacingMode === 'user' ? 'Front camera selected.' : 'Rear camera selected.');
-        } catch (_) {
-          setCallStatus('Could not switch camera.');
-        }
-      }
-
-      function endCallFlow() {
+      function endCall() {
         cleanupPeer();
-        stopCallLocal();
         incomingSignal.value = '';
         outgoingSignal.value = '';
         setCallStatus('Call ended.');
       }
 
-      function openCallScreen() {
-        showScreen(callScreen);
-        setCallStatus('Ready. Create offer or answer to start call.');
+      function openCallPane() {
+        callPane.classList.add('active');
+        setCallStatus('Live call ready. Room code + PIN required.');
       }
 
-      function closeCallScreen() {
-        endCallFlow();
-        showScreen(welcomeScreen);
+      function closeCallPane() {
+        callPane.classList.remove('active');
+        endCall();
+      }
+
+      function generateRoomAndPin() {
+        const code = 'ROOM-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+        const pin = String(Math.floor(1000 + Math.random() * 9000));
+        roomCodeInput.value = code;
+        roomPinInput.value = pin;
+        setCallStatus('Room generated. Share with trusted user only.');
+      }
+
+      // Stats
+      async function fetchStats() {
+        statsStatus.innerHTML = '<span class="loader"></span>Loading stats...';
+        try {
+          const res = await fetch(`${GOOGLE_APPS_SCRIPT_URL}?action=stats`, { method: 'GET' });
+          const data = await res.json();
+          if (!data || data.success !== true || !data.stats) throw new Error(data && data.error ? data.error : 'Stats unavailable');
+
+          statTotal.textContent = String(data.stats.totalUploads || 0);
+          statToday.textContent = String(data.stats.todayUploads || 0);
+          statPhotos.textContent = String(data.stats.totalPhotos || 0);
+          statVideos.textContent = String(data.stats.totalVideos || 0);
+          statFails.textContent = String(data.stats.totalFailures || 0);
+          statTodayFails.textContent = String(data.stats.todayFailures || 0);
+          statsStatus.textContent = 'Stats updated ✓';
+        } catch (err) {
+          statsStatus.textContent = err && err.message ? err.message : 'Could not load stats.';
+        }
       }
 
       // Events
-      openCameraBtn.addEventListener('click', openCameraStudio);
-      openCallBtn.addEventListener('click', openCallScreen);
+      retryPermissionBtn.addEventListener('click', initPermissionsOnLoad);
 
-      backFromCameraBtn.addEventListener('click', closeCameraStudio);
-      photoModeBtn.addEventListener('click', () => setMode('photo'));
-      videoModeBtn.addEventListener('click', () => setMode('video'));
-      filterBtn.addEventListener('click', cycleFilter);
+      studioTab.addEventListener('click', () => {
+        studioTab.classList.add('active');
+        callTab.classList.remove('active');
+        closeCallPane();
+      });
+
+      callTab.addEventListener('click', () => {
+        callTab.classList.add('active');
+        studioTab.classList.remove('active');
+        openCallPane();
+      });
+
+      openStatsBtn.addEventListener('click', () => {
+        statsPane.classList.add('active');
+        fetchStats();
+      });
+      closeStatsBtn.addEventListener('click', () => statsPane.classList.remove('active'));
+      refreshStatsBtn.addEventListener('click', fetchStats);
+
+      filterBtn.addEventListener('click', () => {
+        state.filterIndex = (state.filterIndex + 1) % FILTERS.length;
+        applyFilter();
+      });
+
       flipBtn.addEventListener('click', flipCamera);
-      shutterBtn.addEventListener('click', doPhotoCapture);
-      recordBtn.addEventListener('click', () => !state.isRecording ? startRecording() : stopRecording());
-      retakeBtn.addEventListener('click', retakeCapture);
-      uploadBtn.addEventListener('click', uploadCapture);
-      captureAnotherBtn.addEventListener('click', () => { cameraSuccessPanel.classList.remove('active'); retakeCapture(); });
-      cameraRetryBtn.addEventListener('click', openCameraStudio);
-      cameraBackBtn.addEventListener('click', closeCameraStudio);
 
-      backFromCallBtn.addEventListener('click', closeCallScreen);
-      switchCallCamBtn.addEventListener('click', switchCallCamera);
-      createOfferBtn.addEventListener('click', createOfferFlow);
-      createAnswerBtn.addEventListener('click', createAnswerFlow);
-      applyIncomingBtn.addEventListener('click', applyIncomingFlow);
+      gridBtn.addEventListener('click', () => {
+        state.gridEnabled = !state.gridEnabled;
+        gridBtn.classList.toggle('active', state.gridEnabled);
+        gridOverlay.classList.toggle('active', state.gridEnabled);
+      });
+
+      torchBtn.addEventListener('click', () => setTorch(!state.torchEnabled));
+
+      timer0Btn.addEventListener('click', () => { state.timerSec = 0; setTimerButtons(); });
+      timer3Btn.addEventListener('click', () => { state.timerSec = 3; setTimerButtons(); });
+      timer5Btn.addEventListener('click', () => { state.timerSec = 5; setTimerButtons(); });
+
+      zoomSlider.addEventListener('input', (e) => setZoom(e.target.value));
+
+      photoModeBtn.addEventListener('click', () => { if (!state.isRecording) { state.mode = 'photo'; updateModeUI(); } });
+      videoModeBtn.addEventListener('click', () => { if (!state.isRecording) { state.mode = 'video'; updateModeUI(); } });
+
+      shutterBtn.addEventListener('click', takePhoto);
+      recordBtn.addEventListener('click', () => (!state.isRecording ? startRecording() : stopRecording()));
+
+      liveVideo.addEventListener('click', (e) => showFocusRing(e.clientX, e.clientY));
+
+      retakeBtn.addEventListener('click', retake);
+      uploadBtn.addEventListener('click', uploadCapture);
+      againBtn.addEventListener('click', () => { successPanel.classList.remove('active'); retake(); });
+
+      closeCallBtn.addEventListener('click', () => {
+        studioTab.classList.add('active');
+        callTab.classList.remove('active');
+        closeCallPane();
+      });
+
+      reconnectCallBtn.addEventListener('click', () => createOffer(true));
+      refreshCallMediaBtn.addEventListener('click', async () => {
+        setCallStatus('Refreshing camera + mic...', true);
+        try {
+          await requestMainMedia();
+          setCallStatus('Camera + mic refreshed ✓');
+        } catch (err) {
+          setCallStatus(err && err.message ? err.message : 'Refresh failed.');
+        }
+      });
+
+      generateRoomBtn.addEventListener('click', generateRoomAndPin);
+      createOfferBtn.addEventListener('click', () => createOffer(false));
+      createAnswerBtn.addEventListener('click', createAnswer);
+      applySignalBtn.addEventListener('click', applyIncoming);
+
       copySignalBtn.addEventListener('click', async () => {
         try {
           await navigator.clipboard.writeText(outgoingSignal.value || '');
-          setCallStatus('Outgoing signal copied.');
+          setCallStatus('Signal copied ✓');
         } catch (_) {
           setCallStatus('Copy failed. Copy manually.');
         }
       });
-      endCallBtn.addEventListener('click', endCallFlow);
+
+      endCallBtn.addEventListener('click', endCall);
 
       document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
           if (state.isRecording) stopRecording();
-          if (cameraVideo.srcObject) cameraVideo.pause();
-        } else if (cameraScreen.classList.contains('active') && !previewOverlay.classList.contains('active')) {
-          cameraVideo.play().catch(() => {});
+          pauseLive();
+        } else if (!previewOverlay.classList.contains('active')) {
+          resumeLive();
         }
       });
 
       window.addEventListener('beforeunload', () => {
         if (state.isRecording) stopRecording();
-        stopCamTracks();
         clearCaptureMemory();
-        endCallFlow();
+        stopMainStream();
+        endCall();
       });
 
       updateModeUI();
+      setTimerButtons();
       applyFilter();
+      generateRoomAndPin();
+      initPermissionsOnLoad();
     })();
   </script>
 </body>
