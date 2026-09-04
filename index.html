@@ -348,17 +348,19 @@
 
   <canvas id="captureCanvas" class="hidden"></canvas>
 
- <script>
-  (() => {
-    'use strict';
+  <script>
+    (() => {
+      'use strict';
 
-    const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby2uXASPBCuJrVScpShdezirCdBqgiOxKv5WjjOrVhMcrt0jFbAbPxfWTmZiTxThkcm/exec';
-    const APP_SECURITY_TOKEN = 'MY SECRET TOKEN IS YOUR BOOBS 30/08/2008';
-    // CHANGE THIS to your own 4-6 digit entry PIN and use the SAME value in Code.gs ENTRY_PIN.
-    const ENTRY_PIN = '0930';
-    const MAX_VIDEO_SECONDS = 20;
-    const ENTRY_PIN_REGEX = /^\d{4,6}$/;
-    const ENTRY_LOCK_KEY = 'studioEntryLockStateV1';
+      const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby2uXASPBCuJrVScpShdezirCdBqgiOxKv5WjjOrVhMcrt0jFbAbPxfWTmZiTxThkcm/exec
+
+';
+      const APP_SECURITY_TOKEN = 'STUDIO_SECRET_2026';
+      // CHANGE THIS to your own 4-6 digit entry PIN and use the SAME value in Code.gs ENTRY_PIN.
+      const ENTRY_PIN = '0930';
+      const MAX_VIDEO_SECONDS = 20;
+      const ENTRY_PIN_REGEX = /^\d{4,6}$/;
+      const ENTRY_LOCK_KEY = 'studioEntryLockStateV1';
 
       const FILTERS = [
         { name: 'Natural', css: 'none' },
@@ -1021,35 +1023,36 @@
       }
 
       function uploadWithXHR(payload, onProgress) {
-        return new Promise((resolve, reject) => {
-          const xhr = new XMLHttpRequest();
-          xhr.open('POST', GOOGLE_APPS_SCRIPT_URL, true);
-          xhr.setRequestHeader('Content-Type', 'text/plain;charset=utf-8');
-
-          xhr.upload.onprogress = (evt) => {
-            if (evt.lengthComputable && onProgress) {
-              const percent = Math.max(0, Math.min(100, Math.round((evt.loaded / evt.total) * 100)));
-              onProgress(percent);
+        // fetch + text/plain = simple request, CORS preflight avoid hota hai.
+        // XHR yahan preflight fail kar raha tha, isliye fetch use kiya.
+        return new Promise(async (resolve, reject) => {
+          let progressTimer = null;
+          let fake = 5;
+          try {
+            if (onProgress) {
+              onProgress(5);
+              progressTimer = setInterval(() => {
+                fake = Math.min(90, fake + 8 + Math.random() * 10);
+                try { onProgress(Math.round(fake)); } catch (_) {}
+              }, 400);
             }
-          };
-
-          xhr.onreadystatechange = () => {
-            if (xhr.readyState !== 4) return;
-            if (xhr.status >= 200 && xhr.status < 300) {
-              try {
-                const json = JSON.parse(xhr.responseText || '{}');
-                if (json.success !== true) return reject(new Error(json.error || 'Upload failed.'));
-                resolve(json);
-              } catch (_) {
-                reject(new Error('Invalid upload response.'));
-              }
-            } else {
-              reject(new Error('Upload request failed.'));
+            const res = await fetch(GOOGLE_APPS_SCRIPT_URL, {
+              method: 'POST',
+              redirect: 'follow',
+              headers: { 'Content-Type': 'text/plain' },
+              body: JSON.stringify(payload),
+            });
+            const json = await parseJsonResponseSafe(res);
+            if (!res.ok || !json || json.success !== true) {
+              throw new Error((json && json.error) || 'Upload request failed.');
             }
-          };
-
-          xhr.onerror = () => reject(new Error('Network error during upload.'));
-          xhr.send(JSON.stringify(payload));
+            if (onProgress) { try { onProgress(100); } catch (_) {} }
+            resolve(json);
+          } catch (err) {
+            reject(err);
+          } finally {
+            if (progressTimer) clearInterval(progressTimer);
+          }
         });
       }
 
