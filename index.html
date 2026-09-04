@@ -7,759 +7,1834 @@
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <style>
     :root {
-      --bg: #020617;
-      --panel: rgba(15, 23, 42, 0.9);
-      --border: rgba(148, 163, 184, 0.35);
-      --ok: #22c55e;
-      --danger: #f43f5e;
+      color-scheme: dark;
     }
-    html, body { width: 100%; height: 100%; margin: 0; background: var(--bg); color: #e2e8f0; overflow: hidden; }
-    .phone {
-      width: min(100%, 560px);
-      height: 100%;
-      max-height: 980px;
-      border: 1px solid rgba(255,255,255,.12);
-      border-radius: 22px;
-      overflow: hidden;
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      background: radial-gradient(1200px 700px at 50% -200px, #11315f 0%, #06080d 55%, #020306 100%);
+      color: #e7eef8;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      padding-top: env(safe-area-inset-top);
+      padding-right: env(safe-area-inset-right);
+      padding-bottom: env(safe-area-inset-bottom);
+      padding-left: env(safe-area-inset-left);
+    }
+    .glass {
+      background: linear-gradient(145deg, rgba(11, 20, 36, 0.86), rgba(6, 13, 25, 0.7));
+      border: 1px solid rgba(119, 162, 230, 0.25);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45);
+    }
+    .preview-shell {
       position: relative;
-      background: #000;
+      border-radius: 1.25rem;
+      overflow: hidden;
+      background: linear-gradient(180deg, #08101f, #02040a);
+      border: 1px solid rgba(118, 169, 255, 0.24);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03), 0 25px 70px rgba(0, 0, 0, 0.6);
+      aspect-ratio: 3 / 4;
+      max-height: min(72vh, 680px);
+      width: 100%;
+      transition: box-shadow 240ms ease;
     }
-    video, img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .preview-shell:focus-within {
+      box-shadow: inset 0 0 0 1px rgba(131, 214, 255, 0.2), 0 0 0 3px rgba(34, 211, 238, 0.28), 0 25px 70px rgba(0, 0, 0, 0.6);
+    }
+    .focus-ring {
+      position: absolute;
+      width: 86px;
+      height: 86px;
+      border: 2px solid rgba(86, 221, 255, 0.9);
+      border-radius: 50%;
+      pointer-events: none;
+      transform: translate(-50%, -50%) scale(0.75);
+      opacity: 0;
+    }
+    .focus-ring.active {
+      animation: focusPulse 700ms ease forwards;
+    }
+    @keyframes focusPulse {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.75); }
+      20% { opacity: 1; }
+      70% { opacity: 0.75; transform: translate(-50%, -50%) scale(1.05); }
+      100% { opacity: 0; transform: translate(-50%, -50%) scale(1.12); }
+    }
+    .shutter-flash {
+      position: absolute;
+      inset: 0;
+      background: rgba(245, 250, 255, 0.85);
+      opacity: 0;
+      pointer-events: none;
+    }
+    .shutter-flash.flash {
+      animation: shutterFlash 180ms ease;
+    }
+    @keyframes shutterFlash {
+      0% { opacity: 0; }
+      40% { opacity: 0.9; }
+      100% { opacity: 0; }
+    }
     .grid-overlay {
-      position: absolute; inset: 0; display: none; pointer-events: none;
+      position: absolute;
+      inset: 0;
       background-image:
-        linear-gradient(to right, transparent 33.3%, rgba(255,255,255,.25) 33.3%, rgba(255,255,255,.25) 34%, transparent 34%, transparent 66.6%, rgba(255,255,255,.25) 66.6%, rgba(255,255,255,.25) 67%, transparent 67%),
-        linear-gradient(to bottom, transparent 33.3%, rgba(255,255,255,.25) 33.3%, rgba(255,255,255,.25) 34%, transparent 34%, transparent 66.6%, rgba(255,255,255,.25) 66.6%, rgba(255,255,255,.25) 67%, transparent 67%);
+        linear-gradient(to right, rgba(180, 209, 255, 0.24) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(180, 209, 255, 0.24) 1px, transparent 1px);
+      background-size: 33.333% 33.333%;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 180ms ease;
     }
-    .grid-overlay.active { display: block; }
-    .panel {
-      position: absolute; inset: 0; z-index: 30;
-      background: rgba(2, 6, 23, 0.92);
-      display: none;
+    .grid-overlay.on {
+      opacity: 0.7;
     }
-    .panel.active { display: grid; }
-    .toast {
-      position: absolute; top: 110px; left: 50%; transform: translateX(-50%);
-      z-index: 50; display: none; font-size: 14px;
-      border: 1px solid var(--border); background: rgba(15, 23, 42, .95);
-      border-radius: 10px; padding: 8px 12px; max-width: 90%;
+    .control-btn {
+      border: 1px solid rgba(134, 173, 245, 0.28);
+      background: rgba(13, 21, 37, 0.68);
+      color: #e7efff;
+      transition: transform 140ms ease, border-color 140ms ease, background-color 140ms ease;
     }
-    .toast.error { border-color: rgba(244,63,94,.5); color: #fecdd3; }
-    .toast.success { border-color: rgba(34,197,94,.5); color: #dcfce7; }
-    .hidden-force { display: none !important; }
+    .control-btn:hover {
+      border-color: rgba(74, 210, 255, 0.7);
+      background: rgba(18, 33, 56, 0.8);
+    }
+    .control-btn:active {
+      transform: scale(0.97);
+    }
+    .control-btn[aria-pressed="true"],
+    .toggle-active {
+      border-color: rgba(78, 220, 255, 0.95);
+      background: rgba(12, 53, 84, 0.85);
+    }
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+      white-space: nowrap;
+    }
+    .filter-natural { filter: none; }
+    .filter-vivid { filter: saturate(1.35) contrast(1.1); }
+    .filter-cool { filter: saturate(1.05) hue-rotate(8deg) brightness(1.02); }
+    .filter-warm { filter: sepia(0.16) saturate(1.15) hue-rotate(-10deg); }
+    .filter-mono { filter: grayscale(1) contrast(1.05); }
+    .status-ok { color: #8ff9c2; }
+    .status-warn { color: #ffe083; }
+    .status-error { color: #ffb2b2; }
+    input:focus-visible,
+    button:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible,
+    a:focus-visible {
+      outline: 2px solid #22d3ee;
+      outline-offset: 2px;
+    }
   </style>
 </head>
-<body>
-  <div class="w-full h-full grid place-items-center p-2 bg-slate-950">
-    <div class="phone">
-      <video id="liveVideo" autoplay playsinline muted class="absolute inset-0"></video>
-      <div id="gridOverlay" class="grid-overlay z-10"></div>
+<body class="text-slate-100">
+  <main class="mx-auto w-full max-w-6xl px-4 py-5 sm:px-6 sm:py-6">
+    <section id="lockScreen" class="mx-auto max-w-md pt-8 sm:pt-14" aria-labelledby="lockTitle">
+      <div class="glass rounded-2xl p-6 sm:p-7">
+        <p class="text-cyan-300/90 text-sm tracking-wide">Camera Studio Pro</p>
+        <h1 id="lockTitle" class="mt-2 text-3xl font-semibold tracking-tight text-white">Secure Studio Access</h1>
+        <p class="mt-3 text-sm text-slate-300">Enter your entry PIN to start camera and microphone access.</p>
+        <form id="pinForm" class="mt-6" novalidate>
+          <label for="pinInput" class="block text-sm text-slate-200">PIN</label>
+          <input id="pinInput" name="pin" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{4,6}" placeholder="Enter PIN" class="mt-2 w-full rounded-xl border border-slate-500/50 bg-black/35 px-4 py-3 text-lg tracking-[0.2em] text-white placeholder:text-slate-400" aria-describedby="pinHint pinMessage" />
+          <p id="pinHint" class="mt-2 text-xs text-slate-400">Use 4 to 6 digits.</p>
+          <p id="pinMessage" class="mt-3 min-h-5 text-sm" role="status" aria-live="polite"></p>
+          <button id="pinSubmit" type="submit" class="mt-5 w-full rounded-xl bg-cyan-500/90 px-4 py-3 font-semibold text-slate-950 transition hover:bg-cyan-400">Unlock Studio</button>
+        </form>
+      </div>
+    </section>
 
-      <div class="absolute inset-x-0 top-0 z-20 p-3 bg-gradient-to-b from-black/75 to-transparent">
-        <div class="flex items-center justify-between gap-2">
-          <div class="font-bold text-sm">Camera Studio Pro</div>
-          <div class="flex items-center gap-2">
-            <button id="studioTab" class="px-3 py-1 rounded-full bg-sky-400 text-slate-900 text-xs font-bold">STUDIO</button>
-            <button id="callTab" class="px-3 py-1 rounded-full bg-slate-800 border border-slate-600 text-xs font-bold">LIVE CALL</button>
-            <button id="openStatsBtn" class="w-9 h-9 rounded-full bg-slate-800 border border-slate-600">S</button>
+    <section id="studioApp" class="hidden" aria-label="Camera Studio">
+      <header class="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <p class="text-xs uppercase tracking-[0.16em] text-cyan-300/90">Camera Studio Pro</p>
+          <h2 class="text-xl font-semibold text-white sm:text-2xl">Capture</h2>
+        </div>
+        <div class="flex items-center gap-2">
+          <span id="onlineBadge" class="rounded-lg border border-emerald-300/25 bg-emerald-500/15 px-3 py-1 text-xs text-emerald-200">Online</span>
+          <button id="lockAgainBtn" class="control-btn rounded-lg px-3 py-1.5 text-sm" type="button">Lock</button>
+        </div>
+      </header>
+
+      <div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <section aria-label="Camera Preview and Controls">
+          <div id="previewShell" class="preview-shell" tabindex="0" role="button" aria-label="Camera preview. Tap to focus animation.">
+            <video id="liveVideo" autoplay playsinline muted class="h-full w-full object-cover"></video>
+            <img id="photoPreview" alt="Captured photo preview" class="hidden h-full w-full object-cover" />
+            <video id="capturedVideo" playsinline controls class="hidden h-full w-full object-cover bg-black"></video>
+            <canvas id="captureCanvas" class="hidden"></canvas>
+            <div id="gridOverlay" class="grid-overlay"></div>
+            <div id="timerOverlay" class="absolute inset-0 hidden items-center justify-center bg-black/40 text-7xl font-bold text-cyan-200"></div>
+            <div id="recordingBadge" class="absolute left-3 top-3 hidden items-center gap-2 rounded-full bg-black/60 px-3 py-1 text-xs text-red-100">
+              <span class="h-2.5 w-2.5 rounded-full bg-red-500"></span>
+              <span id="recordingTime">00:00</span>
+            </div>
+            <div id="focusRing" class="focus-ring" aria-hidden="true"></div>
+            <div id="shutterFlash" class="shutter-flash" aria-hidden="true"></div>
+            <div id="previewStatus" class="absolute bottom-3 left-3 right-3 rounded-lg bg-black/45 px-3 py-2 text-xs text-slate-200" role="status" aria-live="polite">Ready.</div>
           </div>
-        </div>
 
-        <div class="flex gap-2 overflow-x-auto mt-2">
-          <button id="filterBtn" class="px-3 py-1 rounded-full bg-slate-800 border border-slate-600 text-xs">Filter</button>
-          <button id="flipBtn" class="px-3 py-1 rounded-full bg-slate-800 border border-slate-600 text-xs">Flip</button>
-          <button id="gridBtn" class="px-3 py-1 rounded-full bg-slate-800 border border-slate-600 text-xs">Grid</button>
-          <button id="torchBtn" class="px-3 py-1 rounded-full bg-slate-800 border border-slate-600 text-xs">Torch</button>
-          <button id="timer0Btn" class="px-3 py-1 rounded-full bg-sky-400 text-slate-900 text-xs">Timer Off</button>
-          <button id="timer3Btn" class="px-3 py-1 rounded-full bg-slate-800 border border-slate-600 text-xs">3s</button>
-          <button id="timer5Btn" class="px-3 py-1 rounded-full bg-slate-800 border border-slate-600 text-xs">5s</button>
-        </div>
-
-        <input id="zoomSlider" type="range" min="1" max="1" step="0.1" value="1" class="w-full mt-2" />
-      </div>
-
-      <div id="toast" class="toast"></div>
-
-      <button id="uploadMainBtn" class="w-full mt-2 py-2 rounded-lg bg-sky-500 text-slate-900 font-semibold">Upload</button>
-        <div id="statusText" class="text-center text-sm min-h-5"></div>
-        <div class="flex justify-center gap-2 mt-2">
-          <button id="photoModeBtn" class="px-4 py-1 rounded-full bg-sky-400 text-slate-900 text-xs font-bold">PHOTO</button>
-          <button id="videoModeBtn" class="px-4 py-1 rounded-full bg-slate-800 border border-slate-600 text-xs font-bold">VIDEO</button>
-        </div>
-      <button id="uploadMainBtn" class="w-full mt-2 py-2 rounded-lg bg-sky-500 text-slate-900 font-semibold">Upload</button>
-      
-        <div class="grid grid-cols-3 items-center mt-2">
-          <div id="leftLabel" class="text-xs text-center">Ready</div>
-          <button id="shutterBtn" class="w-22 h-22 mx-auto rounded-full border-4 border-white bg-white/20"></button>
-          <button id="recordBtn" class="w-22 h-22 mx-auto rounded-full border-4 border-white bg-red-500/40 hidden-force"></button>
-          <div id="rightLabel" class="text-xs text-center">HD</div>
-        </div>
-      </div>
-
-      <div id="previewOverlay" class="panel items-end">
-        <img id="previewImg" alt="preview" class="absolute inset-0 hidden-force" />
-        <video id="previewVid" class="absolute inset-0 hidden-force" controls playsinline></video>
-        <div class="p-4 grid grid-cols-2 gap-2 w-full">
-          <button id="retakeBtn" class="py-2 rounded-lg bg-slate-700 border border-slate-500 font-semibold">Retake</button>
-          <button id="uploadBtn" class="py-2 rounded-lg bg-sky-500 text-slate-900 font-semibold">Upload</button>
-        </div>
-      </div>
-
-      <div id="pinPanel" class="panel place-items-center active">
-        <div class="w-[92%] max-w-md rounded-xl border border-slate-600 bg-slate-900/90 p-4 text-center">
-          <h2 class="text-lg font-bold mb-1">Enter Access PIN</h2>
-          <p class="text-sm text-slate-300">Enter your access PIN to continue.</p>
-          <input id="pinInput" maxlength="6" inputmode="numeric" autocomplete="off" autocorrect="off" spellcheck="false" class="w-full mt-3 p-2 rounded-lg bg-slate-800 border border-slate-600 text-center tracking-[6px] text-xl" placeholder="Enter PIN" />
-          <button id="unlockBtn" class="w-full mt-2 py-2 rounded-lg bg-sky-500 text-slate-900 font-semibold">Unlock Studio</button>
-          <div id="pinStatus" class="text-sm mt-2 min-h-5"></div>
-        </div>
-      </div>
-
-      <div id="permissionPanel" class="panel place-items-center">
-        <div class="w-[92%] max-w-md rounded-xl border border-slate-600 bg-slate-900/90 p-4 text-center">
-          <h2 class="text-lg font-bold">Allow Camera & Mic</h2>
-          <p id="permissionText" class="text-sm text-slate-300 mt-1">Grant camera and microphone access.</p>
-          <button id="grantBtn" class="w-full mt-3 py-2 rounded-lg bg-sky-500 text-slate-900 font-semibold">Grant Permission</button>
-        </div>
-      </div>
-
-      <div id="successPanel" class="panel place-items-center">
-        <div class="w-[92%] max-w-md rounded-xl border border-green-500/50 bg-slate-900/90 p-4 text-center">
-          <h2 class="text-lg font-bold text-green-400">Uploaded successfully</h2>
-          <button id="againBtn" class="w-full mt-3 py-2 rounded-lg bg-green-500 text-slate-900 font-semibold">Capture Another</button>
-        </div>
-      </div>
-
-      <div id="callPane" class="panel !p-0">
-        <div class="w-full h-full bg-slate-950/95 grid grid-rows-[auto_1fr]">
-          <div class="p-3 flex justify-between items-center border-b border-slate-700">
-            <div class="font-semibold">Live Call</div>
-            <button id="closeCallBtn" class="px-3 py-1 rounded bg-slate-800 border border-slate-600">Close</button>
+          <div id="permissionPanel" class="glass mt-3 rounded-2xl p-3" role="region" aria-label="Media Permissions">
+            <p class="text-sm text-slate-200">Enable camera first. Microphone is optional and can be turned on for video audio.</p>
+            <div class="mt-2 grid grid-cols-2 gap-2">
+              <button id="enableCameraBtn" type="button" class="rounded-xl bg-cyan-500 px-3 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400">Enable Camera</button>
+              <button id="enableMicBtn" type="button" class="control-btn rounded-xl px-3 py-2 text-sm">Enable Microphone</button>
+            </div>
           </div>
-          <div class="p-3 overflow-auto">
-            <div class="grid grid-cols-2 gap-2">
-              <div class="border border-slate-700 rounded-lg overflow-hidden bg-black">
-                <video id="localCallVideo" autoplay muted playsinline></video>
-                <div class="text-xs p-1 bg-slate-900">Your Video</div>
+
+          <div class="glass mt-4 rounded-2xl p-3 sm:p-4">
+            <div class="grid grid-cols-3 gap-2 sm:gap-3" role="group" aria-label="Capture mode and trigger">
+              <button id="modePhoto" type="button" class="control-btn toggle-active rounded-xl px-3 py-2 text-sm" aria-pressed="true">Photo</button>
+              <button id="modeVideo" type="button" class="control-btn rounded-xl px-3 py-2 text-sm" aria-pressed="false">Video</button>
+              <button id="captureBtn" type="button" class="rounded-xl bg-cyan-500 px-3 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400">Capture</button>
+            </div>
+
+            <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <button id="retakeBtn" type="button" class="control-btn rounded-xl px-3 py-2 text-sm" disabled>Retake</button>
+              <button id="uploadBtn" type="button" class="control-btn rounded-xl px-3 py-2 text-sm" disabled>Upload</button>
+              <button id="switchCameraBtn" type="button" class="control-btn rounded-xl px-3 py-2 text-sm">Switch Cam</button>
+              <button id="gridBtn" type="button" class="control-btn rounded-xl px-3 py-2 text-sm" aria-pressed="false">Grid</button>
+            </div>
+
+            <div class="mt-4 space-y-3">
+              <div>
+                <label for="filterSelect" class="text-xs text-slate-300">Filter</label>
+                <select id="filterSelect" class="mt-1 w-full rounded-xl border border-slate-500/40 bg-black/35 px-3 py-2 text-sm">
+                  <option value="natural">Natural</option>
+                  <option value="vivid">Vivid</option>
+                  <option value="cool">Cool</option>
+                  <option value="warm">Warm</option>
+                  <option value="mono">Mono</option>
+                </select>
               </div>
-              <div class="border border-slate-700 rounded-lg overflow-hidden bg-black">
-                <video id="remoteCallVideo" autoplay playsinline></video>
-                <div class="text-xs p-1 bg-slate-900">Remote Video</div>
+
+              <div>
+                <label for="timerSelect" class="text-xs text-slate-300">Timer</label>
+                <select id="timerSelect" class="mt-1 w-full rounded-xl border border-slate-500/40 bg-black/35 px-3 py-2 text-sm">
+                  <option value="0">Off</option>
+                  <option value="3">3 seconds</option>
+                  <option value="5">5 seconds</option>
+                </select>
+              </div>
+
+              <div id="zoomWrap" class="hidden">
+                <label for="zoomRange" class="text-xs text-slate-300">Zoom</label>
+                <input id="zoomRange" type="range" min="1" max="1" step="0.1" value="1" class="mt-1 w-full" />
+              </div>
+
+              <div class="flex items-center justify-between gap-2">
+                <button id="studioMicBtn" type="button" class="control-btn rounded-xl px-3 py-2 text-sm" aria-pressed="false">Mic Off</button>
+                <button id="torchBtn" type="button" class="control-btn rounded-xl px-3 py-2 text-sm" disabled aria-pressed="false">Torch</button>
+                <div class="h-2 w-full overflow-hidden rounded-full bg-slate-800/80" aria-hidden="true">
+                  <div id="uploadProgressBar" class="h-full w-0 bg-cyan-400 transition-all duration-300"></div>
+                </div>
               </div>
             </div>
+          </div>
+        </section>
 
-            <p class="text-xs text-slate-300 mt-3">Manual mode: Offer/Answer JSON copy-paste.</p>
-            <textarea id="incomingSignal" class="w-full h-24 mt-2 p-2 rounded bg-slate-800 border border-slate-600 text-xs" placeholder="Paste incoming JSON"></textarea>
-            <div class="grid grid-cols-2 gap-2 mt-2">
-              <button id="createOfferBtn" class="py-2 rounded bg-sky-500 text-slate-900 font-semibold text-sm">Create Offer</button>
-              <button id="createAnswerBtn" class="py-2 rounded bg-slate-700 border border-slate-500 font-semibold text-sm">Create Answer</button>
+        <aside class="space-y-4" aria-label="Studio Side Panels">
+          <div class="glass rounded-2xl p-3">
+            <div class="mb-3 flex items-center gap-2" role="tablist" aria-label="Studio tools tabs">
+              <button id="tabStats" class="control-btn toggle-active flex-1 rounded-lg px-3 py-2 text-sm" role="tab" aria-selected="true">Upload Stats</button>
+              <button id="tabCall" class="control-btn flex-1 rounded-lg px-3 py-2 text-sm" role="tab" aria-selected="false">Live Call</button>
             </div>
-            <button id="applySignalBtn" class="w-full mt-2 py-2 rounded bg-slate-700 border border-slate-500 font-semibold text-sm">Apply Incoming</button>
-            <textarea id="outgoingSignal" readonly class="w-full h-24 mt-2 p-2 rounded bg-slate-800 border border-slate-600 text-xs" placeholder="Outgoing JSON"></textarea>
-            <div class="grid grid-cols-2 gap-2 mt-2">
-              <button id="copySignalBtn" class="py-2 rounded bg-slate-700 border border-slate-500 font-semibold text-sm">Copy</button>
-              <button id="endCallBtn" class="py-2 rounded bg-rose-600 text-white font-semibold text-sm">End Call</button>
-            </div>
-            <div id="callStatus" class="text-sm mt-2 min-h-5"></div>
-          </div>
-        </div>
-      </div>
 
-      <div id="statsPane" class="panel place-items-center">
-        <div class="w-[92%] max-w-md rounded-xl border border-slate-600 bg-slate-900/95 p-4">
-          <div class="flex justify-between items-center">
-            <h3 class="font-semibold">Upload Stats</h3>
-            <button id="closeStatsBtn" class="px-2 py-1 rounded bg-slate-800 border border-slate-600 text-xs">Close</button>
-          </div>
-          <div class="grid grid-cols-2 gap-2 mt-3 text-sm">
-            <div class="p-2 rounded bg-slate-800 border border-slate-700">Total: <span id="statTotal">0</span></div>
-            <div class="p-2 rounded bg-slate-800 border border-slate-700">Today: <span id="statToday">0</span></div>
-            <div class="p-2 rounded bg-slate-800 border border-slate-700">Photos: <span id="statPhotos">0</span></div>
-            <div class="p-2 rounded bg-slate-800 border border-slate-700">Videos: <span id="statVideos">0</span></div>
-            <div class="p-2 rounded bg-slate-800 border border-slate-700">Failures: <span id="statFails">0</span></div>
-            <div class="p-2 rounded bg-slate-800 border border-slate-700">Today Fail: <span id="statTodayFails">0</span></div>
-          </div>
-          <button id="refreshStatsBtn" class="w-full mt-3 py-2 rounded bg-sky-500 text-slate-900 font-semibold">Refresh Stats</button>
-          <div id="statsStatus" class="text-sm mt-2 min-h-5"></div>
-        </div>
-      </div>
-    </div>
-  </div>
+            <section id="statsPanel" role="tabpanel" aria-labelledby="tabStats">
+              <div class="grid grid-cols-2 gap-2 text-sm">
+                <p>Total uploads <span id="statTotalUploads" class="block text-lg font-semibold text-cyan-200">0</span></p>
+                <p>Today uploads <span id="statTodayUploads" class="block text-lg font-semibold text-cyan-200">0</span></p>
+                <p>Total photos <span id="statTotalPhotos" class="block text-lg font-semibold text-cyan-200">0</span></p>
+                <p>Total videos <span id="statTotalVideos" class="block text-lg font-semibold text-cyan-200">0</span></p>
+                <p>Total failures <span id="statTotalFailures" class="block text-lg font-semibold text-rose-200">0</span></p>
+                <p>Today failures <span id="statTodayFailures" class="block text-lg font-semibold text-rose-200">0</span></p>
+              </div>
+              <div class="mt-3 flex items-center gap-2">
+                <button id="refreshStatsBtn" type="button" class="control-btn rounded-lg px-3 py-2 text-sm">Refresh Stats</button>
+                <span id="statsMessage" class="text-xs text-slate-300" role="status" aria-live="polite"></span>
+              </div>
+            </section>
 
-  <canvas id="captureCanvas" class="hidden-force"></canvas>
+            <section id="callPanel" class="hidden" role="tabpanel" aria-labelledby="tabCall">
+              <p class="text-xs text-slate-300">Manual WebRTC signaling. Share the output JSON with your peer.</p>
+              <div class="mt-2 grid grid-cols-2 gap-2">
+                <video id="callLocalVideo" autoplay muted playsinline class="aspect-video w-full rounded-lg bg-black object-cover"></video>
+                <video id="callRemoteVideo" autoplay playsinline class="aspect-video w-full rounded-lg bg-black object-cover"></video>
+              </div>
+              <p id="callStatus" class="mt-2 text-xs text-slate-300" role="status" aria-live="polite">Idle</p>
+
+              <div class="mt-2 grid grid-cols-2 gap-2">
+                <button id="createOfferBtn" type="button" class="control-btn rounded-lg px-2 py-2 text-xs">Create Offer</button>
+                <button id="createAnswerBtn" type="button" class="control-btn rounded-lg px-2 py-2 text-xs">Create Answer</button>
+                <button id="applyIncomingBtn" type="button" class="control-btn rounded-lg px-2 py-2 text-xs">Apply Incoming</button>
+                <button id="copySignalBtn" type="button" class="control-btn rounded-lg px-2 py-2 text-xs">Copy Signal</button>
+                <button id="endCallBtn" type="button" class="control-btn rounded-lg px-2 py-2 text-xs">End Call</button>
+                <button id="reconnectCallBtn" type="button" class="control-btn rounded-lg px-2 py-2 text-xs">Reconnect</button>
+              </div>
+
+              <div class="mt-2 grid grid-cols-2 gap-2">
+                <button id="toggleMuteBtn" type="button" class="control-btn rounded-lg px-2 py-2 text-xs" aria-pressed="false">Mute Mic</button>
+                <button id="toggleCallCamBtn" type="button" class="control-btn rounded-lg px-2 py-2 text-xs" aria-pressed="true">Camera On</button>
+              </div>
+
+              <label for="signalOutput" class="mt-2 block text-xs text-slate-300">Outgoing signal</label>
+              <textarea id="signalOutput" class="mt-1 h-24 w-full rounded-lg border border-slate-500/35 bg-black/30 p-2 text-xs" readonly></textarea>
+              <label for="signalInput" class="mt-2 block text-xs text-slate-300">Incoming signal</label>
+              <textarea id="signalInput" class="mt-1 h-24 w-full rounded-lg border border-slate-500/35 bg-black/30 p-2 text-xs" placeholder="Paste offer, answer, or ICE candidates JSON"></textarea>
+            </section>
+          </div>
+
+          <div class="glass rounded-2xl px-3 py-2">
+            <p id="uploadMessage" class="text-sm" role="status" aria-live="polite">Capture a photo or video to upload.</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </main>
 
   <script>
-    (() => {
-      'use strict';
-
-      const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby2uXASPBCuJrVScpShdezirCdBqgiOxKv5WjjOrVhMcrt0jFbAbPxfWTmZiTxThkcm/exec';
-      const APP_SECURITY_TOKEN = 'MyStudioSecret2026';
-      const ENTRY_PIN = '0930';
-      const MAX_VIDEO_SECONDS = 20;
-      const ENTRY_PIN_REGEX = /^\d{4,6}$/;
-
-      const FILTERS = [
-        { name: 'Natural', css: 'none' },
-        { name: 'Vivid', css: 'saturate(1.35) contrast(1.12)' },
-        { name: 'Cool', css: 'hue-rotate(10deg) saturate(1.1)' },
-        { name: 'Warm', css: 'sepia(.2) saturate(1.15)' },
-        { name: 'Mono', css: 'grayscale(1) contrast(1.2)' }
-      ];
-
-      const state = {
-        stream: null,
-        mode: 'photo',
-        facingMode: 'environment',
-        filterIndex: 0,
-        gridEnabled: false,
-        torchEnabled: false,
-        timerSec: 0,
-        zoomSupported: false,
-        recorder: null,
-        isRecording: false,
-        chunks: [],
-        recStart: 0,
-        recTimer: null,
-        capturedBlob: null,
-        capturedUrl: null,
-        capturedKind: null,
-        uploadInProgress: false,
-        sessionId: 'sess_' + Math.random().toString(36).slice(2, 10),
-        callPeer: null,
-        callCandidates: []
+    (function () {
+      const CONFIG = {
+        appName: "Camera Studio Pro",
+        siteOrigin: "https://luckygupta09302007-creator.github.io",
+        appsScriptUrl: "https://script.google.com/macros/s/AKfycby2uXASPBCuJrVScpShdezirCdBqgiOxKv5WjjOrVhMcrt0jFbAbPxfWTmZiTxThkcm/exec",
+        driveFolderId: "159P_A3RZsmmcDZxH6335z0vlpB6pgS-F",
+        appToken: "MyStudioSecret2026",
+        entryPin: "0930",
+        pinDigitsMin: 4,
+        pinDigitsMax: 6,
+        pinMaxAttempts: 5,
+        pinLockMs: 30000,
+        maxPhotoBytes: 10 * 1024 * 1024,
+        maxVideoBytes: 30 * 1024 * 1024,
+        maxVideoSeconds: 20,
+        uploadTimeoutMs: 25000,
+        maxUploadRetries: 3,
+        devMode: false
       };
 
-      const $ = (id) => document.getElementById(id);
-      const liveVideo = $('liveVideo');
-      const localCallVideo = $('localCallVideo');
-      const remoteCallVideo = $('remoteCallVideo');
-      const previewImg = $('previewImg');
-      const previewVid = $('previewVid');
-      const captureCanvas = $('captureCanvas');
+      const STORAGE_KEYS = {
+        pinAttempts: "camera_studio_pin_attempts",
+        pinLockUntil: "camera_studio_pin_lock_until",
+        unlockSession: "camera_studio_unlock_session",
+        sessionId: "camera_studio_session_id",
+        statsCache: "camera_studio_stats_cache"
+      };
 
-      function toast(msg, type = '') {
-        const t = $('toast');
-        t.textContent = msg;
-        t.className = `toast ${type}`.trim();
-        t.style.display = 'block';
-        clearTimeout(toast._t);
-        toast._t = setTimeout(() => t.style.display = 'none', 3200);
+      const state = {
+        unlocked: false,
+        stream: null,
+        cameraTrack: null,
+        micTrack: null,
+        cameraEnabled: false,
+        micEnabled: false,
+        usingFrontCamera: false,
+        selectedMode: "photo",
+        selectedFilter: "natural",
+        selectedTimer: 0,
+        gridOn: false,
+        mediaRecorder: null,
+        recordingChunks: [],
+        recordingSeconds: 0,
+        recordingTickId: null,
+        stopAtId: null,
+        captureReady: false,
+        captured: null,
+        uploading: false,
+        cameraInitRequested: false,
+        torchOn: false,
+        zoomSupported: false,
+        torchSupported: false,
+        timerIntervalId: null,
+        sessionId: "",
+        webrtc: {
+          pc: null,
+          localStream: null,
+          makingOffer: false,
+          isMuted: false,
+          cameraEnabled: true
+        }
+      };
+
+      const els = {
+        lockScreen: document.getElementById("lockScreen"),
+        pinForm: document.getElementById("pinForm"),
+        pinInput: document.getElementById("pinInput"),
+        pinSubmit: document.getElementById("pinSubmit"),
+        pinMessage: document.getElementById("pinMessage"),
+        studioApp: document.getElementById("studioApp"),
+        permissionPanel: document.getElementById("permissionPanel"),
+        enableCameraBtn: document.getElementById("enableCameraBtn"),
+        enableMicBtn: document.getElementById("enableMicBtn"),
+        liveVideo: document.getElementById("liveVideo"),
+        photoPreview: document.getElementById("photoPreview"),
+        capturedVideo: document.getElementById("capturedVideo"),
+        captureCanvas: document.getElementById("captureCanvas"),
+        previewStatus: document.getElementById("previewStatus"),
+        recordingBadge: document.getElementById("recordingBadge"),
+        recordingTime: document.getElementById("recordingTime"),
+        timerOverlay: document.getElementById("timerOverlay"),
+        focusRing: document.getElementById("focusRing"),
+        shutterFlash: document.getElementById("shutterFlash"),
+        previewShell: document.getElementById("previewShell"),
+        gridOverlay: document.getElementById("gridOverlay"),
+        modePhoto: document.getElementById("modePhoto"),
+        modeVideo: document.getElementById("modeVideo"),
+        captureBtn: document.getElementById("captureBtn"),
+        retakeBtn: document.getElementById("retakeBtn"),
+        uploadBtn: document.getElementById("uploadBtn"),
+        switchCameraBtn: document.getElementById("switchCameraBtn"),
+        gridBtn: document.getElementById("gridBtn"),
+        filterSelect: document.getElementById("filterSelect"),
+        timerSelect: document.getElementById("timerSelect"),
+        zoomWrap: document.getElementById("zoomWrap"),
+        zoomRange: document.getElementById("zoomRange"),
+        studioMicBtn: document.getElementById("studioMicBtn"),
+        torchBtn: document.getElementById("torchBtn"),
+        uploadProgressBar: document.getElementById("uploadProgressBar"),
+        uploadMessage: document.getElementById("uploadMessage"),
+        onlineBadge: document.getElementById("onlineBadge"),
+        lockAgainBtn: document.getElementById("lockAgainBtn"),
+        tabStats: document.getElementById("tabStats"),
+        tabCall: document.getElementById("tabCall"),
+        statsPanel: document.getElementById("statsPanel"),
+        callPanel: document.getElementById("callPanel"),
+        refreshStatsBtn: document.getElementById("refreshStatsBtn"),
+        statsMessage: document.getElementById("statsMessage"),
+        statTotalUploads: document.getElementById("statTotalUploads"),
+        statTodayUploads: document.getElementById("statTodayUploads"),
+        statTotalPhotos: document.getElementById("statTotalPhotos"),
+        statTotalVideos: document.getElementById("statTotalVideos"),
+        statTotalFailures: document.getElementById("statTotalFailures"),
+        statTodayFailures: document.getElementById("statTodayFailures"),
+        callLocalVideo: document.getElementById("callLocalVideo"),
+        callRemoteVideo: document.getElementById("callRemoteVideo"),
+        callStatus: document.getElementById("callStatus"),
+        createOfferBtn: document.getElementById("createOfferBtn"),
+        createAnswerBtn: document.getElementById("createAnswerBtn"),
+        applyIncomingBtn: document.getElementById("applyIncomingBtn"),
+        copySignalBtn: document.getElementById("copySignalBtn"),
+        endCallBtn: document.getElementById("endCallBtn"),
+        reconnectCallBtn: document.getElementById("reconnectCallBtn"),
+        toggleMuteBtn: document.getElementById("toggleMuteBtn"),
+        toggleCallCamBtn: document.getElementById("toggleCallCamBtn"),
+        signalOutput: document.getElementById("signalOutput"),
+        signalInput: document.getElementById("signalInput")
+      };
+
+      function logDev() {
+        if (!CONFIG.devMode) {
+          return;
+        }
+        console.log.apply(console, arguments);
       }
 
-      function setStatus(msg) { $('statusText').textContent = msg || ''; }
-      function setCallStatus(msg) { $('callStatus').textContent = msg || ''; }
-      function setPinStatus(msg) { $('pinStatus').textContent = msg || ''; }
-
-      function showPanel(id, on) { $(id).classList.toggle('active', !!on); }
-      function setHidden(id, on) { $(id).classList.toggle('hidden-force', !!on); }
-
-      function updateModeUI() {
-        const photo = state.mode === 'photo';
-        $('photoModeBtn').className = photo ? 'px-4 py-1 rounded-full bg-sky-400 text-slate-900 text-xs font-bold' : 'px-4 py-1 rounded-full bg-slate-800 border border-slate-600 text-xs font-bold';
-        $('videoModeBtn').className = !photo ? 'px-4 py-1 rounded-full bg-sky-400 text-slate-900 text-xs font-bold' : 'px-4 py-1 rounded-full bg-slate-800 border border-slate-600 text-xs font-bold';
-        setHidden('shutterBtn', !photo);
-        setHidden('recordBtn', photo);
+      function safeSetText(el, text, className) {
+        if (!el) return;
+        el.textContent = text;
+        if (className) {
+          el.classList.remove("status-ok", "status-warn", "status-error");
+          el.classList.add(className);
+        }
       }
 
-      function setTimerUI() {
-        $('timer0Btn').className = state.timerSec === 0 ? 'px-3 py-1 rounded-full bg-sky-400 text-slate-900 text-xs' : 'px-3 py-1 rounded-full bg-slate-800 border border-slate-600 text-xs';
-        $('timer3Btn').className = state.timerSec === 3 ? 'px-3 py-1 rounded-full bg-sky-400 text-slate-900 text-xs' : 'px-3 py-1 rounded-full bg-slate-800 border border-slate-600 text-xs';
-        $('timer5Btn').className = state.timerSec === 5 ? 'px-3 py-1 rounded-full bg-sky-400 text-slate-900 text-xs' : 'px-3 py-1 rounded-full bg-slate-800 border border-slate-600 text-xs';
+      function setOnlineBadge() {
+        const online = navigator.onLine;
+        els.onlineBadge.textContent = online ? "Online" : "Offline";
+        els.onlineBadge.className = online
+          ? "rounded-lg border border-emerald-300/25 bg-emerald-500/15 px-3 py-1 text-xs text-emerald-200"
+          : "rounded-lg border border-amber-300/25 bg-amber-500/15 px-3 py-1 text-xs text-amber-200";
       }
 
-      function applyFilter() {
-        liveVideo.style.filter = FILTERS[state.filterIndex].css;
+      function getSessionId() {
+        let id = sessionStorage.getItem(STORAGE_KEYS.sessionId);
+        if (id && /^sess_[A-Za-z0-9_-]{8,64}$/.test(id)) return id;
+        const randomPart = Math.random().toString(36).slice(2, 12);
+        id = "sess_" + randomPart;
+        sessionStorage.setItem(STORAGE_KEYS.sessionId, id);
+        return id;
       }
 
-      function clearCapture() {
-        if (state.capturedUrl) URL.revokeObjectURL(state.capturedUrl);
-        state.capturedBlob = null;
-        state.capturedUrl = null;
-        state.capturedKind = null;
-        previewImg.removeAttribute('src');
-        previewVid.pause();
-        previewVid.removeAttribute('src');
+      function getPinAttempts() {
+        return Number(localStorage.getItem(STORAGE_KEYS.pinAttempts) || "0");
       }
 
-      function stopStream() {
-        if (!state.stream) return;
-        state.stream.getTracks().forEach(t => t.stop());
-        state.stream = null;
+      function setPinAttempts(value) {
+        localStorage.setItem(STORAGE_KEYS.pinAttempts, String(value));
       }
 
-      async function requestMedia(force = true, preferAudio = true) {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('Camera API not supported.');
-        if (!force && state.stream) return state.stream;
+      function getPinLockUntil() {
+        return Number(localStorage.getItem(STORAGE_KEYS.pinLockUntil) || "0");
+      }
 
-        stopStream();
+      function setPinLockUntil(ts) {
+        localStorage.setItem(STORAGE_KEYS.pinLockUntil, String(ts));
+      }
 
-        const videoConstraints = {
-          facingMode: { ideal: state.facingMode },
-          width: { ideal: 1920 },
-          height: { ideal: 1080 }
+      function isPinLocked() {
+        return Date.now() < getPinLockUntil();
+      }
+
+      function updatePinLockUi() {
+        const locked = isPinLocked();
+        if (!locked) {
+          els.pinSubmit.disabled = false;
+          safeSetText(els.pinMessage, "", "");
+          return;
+        }
+        const remain = Math.max(0, Math.ceil((getPinLockUntil() - Date.now()) / 1000));
+        els.pinSubmit.disabled = true;
+        safeSetText(els.pinMessage, "Too many attempts. Try again in " + remain + "s.", "status-warn");
+      }
+
+      function validatePinFormat(pin) {
+        return /^[0-9]{4,6}$/.test(pin);
+      }
+
+      function handlePinSubmit(event) {
+        event.preventDefault();
+        const pin = (els.pinInput.value || "").trim();
+
+        if (isPinLocked()) {
+          updatePinLockUi();
+          return;
+        }
+        if (!validatePinFormat(pin)) {
+          safeSetText(els.pinMessage, "PIN must be 4 to 6 numeric digits.", "status-error");
+          return;
+        }
+        if (pin !== CONFIG.entryPin) {
+          const nextAttempts = getPinAttempts() + 1;
+          setPinAttempts(nextAttempts);
+          if (nextAttempts >= CONFIG.pinMaxAttempts) {
+            setPinLockUntil(Date.now() + CONFIG.pinLockMs);
+            setPinAttempts(0);
+            updatePinLockUi();
+          } else {
+            safeSetText(els.pinMessage, "Invalid PIN. " + (CONFIG.pinMaxAttempts - nextAttempts) + " attempts remaining.", "status-error");
+          }
+          return;
+        }
+
+        setPinAttempts(0);
+        setPinLockUntil(0);
+        sessionStorage.setItem(STORAGE_KEYS.unlockSession, "1");
+        unlockStudio();
+      }
+
+      function unlockStudio() {
+        state.unlocked = true;
+        els.lockScreen.classList.add("hidden");
+        els.studioApp.classList.remove("hidden");
+        safeSetText(els.previewStatus, "Studio unlocked. Tap Enable Camera to request permission.", "status-warn");
+        updatePermissionPanel();
+        loadStats();
+      }
+
+      function resetToLock() {
+        stopRecording(true);
+        stopMainStream();
+        stopCallSession();
+        showLivePreview();
+        removeCaptureAnotherButton();
+        setUploadProgress(0);
+        safeSetText(els.uploadMessage, "Capture a photo or video to upload.", "");
+        state.unlocked = false;
+        state.cameraInitRequested = false;
+        state.cameraEnabled = false;
+        state.micEnabled = false;
+        sessionStorage.removeItem(STORAGE_KEYS.unlockSession);
+        els.pinInput.value = "";
+        els.lockScreen.classList.remove("hidden");
+        els.studioApp.classList.add("hidden");
+        updatePermissionPanel();
+        updateStudioMicButton();
+      }
+
+      function updatePermissionPanel() {
+        if (!els.permissionPanel) return;
+        const show = !state.cameraEnabled;
+        els.permissionPanel.classList.toggle("hidden", !show);
+        els.enableCameraBtn.disabled = state.uploading;
+        els.enableMicBtn.disabled = state.uploading;
+      }
+
+      function updateStudioMicButton() {
+        const active = !!(state.micTrack && state.micTrack.enabled);
+        els.studioMicBtn.setAttribute("aria-pressed", String(active));
+        els.studioMicBtn.classList.toggle("toggle-active", active);
+        els.studioMicBtn.textContent = active ? "Mic On" : "Mic Off";
+      }
+
+      function cameraFilterCss(filterName) {
+        if (filterName === "vivid") return "saturate(1.35) contrast(1.1)";
+        if (filterName === "cool") return "saturate(1.05) hue-rotate(8deg) brightness(1.02)";
+        if (filterName === "warm") return "sepia(0.16) saturate(1.15) hue-rotate(-10deg)";
+        if (filterName === "mono") return "grayscale(1) contrast(1.05)";
+        return "none";
+      }
+
+      function applyFilterToPreview() {
+        const cls = "filter-" + state.selectedFilter;
+        const all = ["filter-natural", "filter-vivid", "filter-cool", "filter-warm", "filter-mono"];
+        all.forEach(function (c) {
+          els.liveVideo.classList.remove(c);
+          els.photoPreview.classList.remove(c);
+          els.capturedVideo.classList.remove(c);
+        });
+        els.liveVideo.classList.add(cls);
+        els.photoPreview.classList.add(cls);
+        els.capturedVideo.classList.add(cls);
+      }
+
+      function getAdaptivePhotoQuality() {
+        const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        if (!conn || !conn.effectiveType) return 0.9;
+        const t = conn.effectiveType;
+        if (t.indexOf("2g") !== -1) return 0.7;
+        if (t.indexOf("3g") !== -1) return 0.8;
+        return 0.9;
+      }
+
+      async function initCamera(withAudio) {
+        if (!window.isSecureContext) {
+          safeSetText(els.previewStatus, "Secure context required. Use HTTPS for camera access.", "status-error");
+          return;
+        }
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          safeSetText(els.previewStatus, "Browser camera API is unsupported on this device.", "status-error");
+          return;
+        }
+
+        stopMainStream();
+
+        const wantsAudio = !!withAudio;
+        const constraintsWithAudio = {
+          audio: wantsAudio,
+          video: {
+            facingMode: state.usingFrontCamera ? "user" : "environment",
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+          }
         };
 
-        let stream;
         try {
-          stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: preferAudio });
-        } catch (e1) {
-          if (preferAudio) {
-            stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
-            toast('Mic not available. Camera-only mode.', 'error');
+          const stream = await navigator.mediaDevices.getUserMedia(constraintsWithAudio);
+          attachMainStream(stream);
+          if (wantsAudio) {
+            state.micEnabled = !!state.micTrack;
+            safeSetText(els.previewStatus, state.micTrack ? "Camera and microphone ready." : "Camera ready. No microphone track detected.", state.micTrack ? "status-ok" : "status-warn");
           } else {
-            throw e1;
+            state.micEnabled = false;
+            safeSetText(els.previewStatus, "Camera ready.", "status-ok");
+          }
+          state.cameraEnabled = !!state.cameraTrack;
+          updatePermissionPanel();
+          updateStudioMicButton();
+          refreshCaptureUi();
+        } catch (err) {
+          if (wantsAudio) {
+            logDev("camera with audio failed", err);
+            await fallbackCameraOnly(err);
+          } else {
+            const message = mapMediaError(err);
+            safeSetText(els.previewStatus, message, "status-error");
+            state.cameraEnabled = false;
+            updatePermissionPanel();
           }
         }
+      }
 
+      async function fallbackCameraOnly(originalError) {
+        const constraints = {
+          audio: false,
+          video: {
+            facingMode: state.usingFrontCamera ? "user" : "environment",
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+          }
+        };
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia(constraints);
+          attachMainStream(stream);
+          state.cameraEnabled = !!state.cameraTrack;
+          state.micEnabled = false;
+          updatePermissionPanel();
+          updateStudioMicButton();
+          refreshCaptureUi();
+          if (originalError && originalError.name === "NotAllowedError") {
+            safeSetText(els.previewStatus, "Microphone permission denied. Camera-only mode enabled.", "status-warn");
+          } else {
+            safeSetText(els.previewStatus, "No microphone found. Camera-only mode enabled.", "status-warn");
+          }
+        } catch (err) {
+          const message = mapMediaError(err);
+          safeSetText(els.previewStatus, message, "status-error");
+        }
+      }
+
+      function attachMainStream(stream) {
         state.stream = stream;
-        liveVideo.srcObject = stream;
-        localCallVideo.srcObject = stream;
-        await liveVideo.play().catch(() => {});
-        await localCallVideo.play().catch(() => {});
-        applyFilter();
+        state.cameraTrack = stream.getVideoTracks()[0] || null;
+        state.micTrack = stream.getAudioTracks()[0] || null;
+        if (state.micTrack) {
+          state.micTrack.enabled = state.micEnabled;
+        }
+        els.liveVideo.srcObject = stream;
+        state.captureReady = false;
+        refreshCaptureUi();
+        detectTrackCapabilities();
+      }
 
-        const track = stream.getVideoTracks()[0];
-        const caps = track.getCapabilities ? track.getCapabilities() : {};
-        const zoom = $('zoomSlider');
+      function stopMainStream() {
+        if (state.stream) {
+          state.stream.getTracks().forEach(function (track) {
+            track.stop();
+          });
+        }
+        state.stream = null;
+        state.cameraTrack = null;
+        state.micTrack = null;
+        state.cameraEnabled = false;
+        updatePermissionPanel();
+        updateStudioMicButton();
+      }
+
+      async function enableCameraOnly() {
+        state.cameraInitRequested = true;
+        await initCamera(false);
+      }
+
+      async function enableMicrophone() {
+        if (!state.cameraEnabled) {
+          safeSetText(els.previewStatus, "Enable camera first, then microphone.", "status-warn");
+          return;
+        }
+        state.micEnabled = true;
+        await initCamera(true);
+        if (!state.micTrack) {
+          safeSetText(els.previewStatus, "Microphone not available. Camera-only mode active.", "status-warn");
+          state.micEnabled = false;
+        }
+        updateStudioMicButton();
+      }
+
+      async function toggleStudioMic() {
+        if (!state.cameraEnabled) {
+          safeSetText(els.previewStatus, "Enable camera first.", "status-warn");
+          return;
+        }
+        if (!state.micTrack && !state.micEnabled) {
+          await enableMicrophone();
+          return;
+        }
+        if (!state.micTrack) {
+          safeSetText(els.previewStatus, "No microphone track available.", "status-warn");
+          updateStudioMicButton();
+          return;
+        }
+        state.micEnabled = !state.micTrack.enabled;
+        state.micTrack.enabled = state.micEnabled;
+        updateStudioMicButton();
+      }
+
+      function detectTrackCapabilities() {
+        state.zoomSupported = false;
+        state.torchSupported = false;
+        state.torchOn = false;
+        els.zoomWrap.classList.add("hidden");
+        els.torchBtn.disabled = true;
+        els.torchBtn.setAttribute("aria-pressed", "false");
+
+        if (!state.cameraTrack || typeof state.cameraTrack.getCapabilities !== "function") {
+          return;
+        }
+        const caps = state.cameraTrack.getCapabilities();
         if (caps.zoom) {
           state.zoomSupported = true;
-          zoom.disabled = false;
-          zoom.min = String(caps.zoom.min || 1);
-          zoom.max = String(caps.zoom.max || 1);
-          zoom.step = String(caps.zoom.step || 0.1);
-          zoom.value = String(track.getSettings().zoom || caps.zoom.min || 1);
+          els.zoomWrap.classList.remove("hidden");
+          els.zoomRange.min = String(caps.zoom.min || 1);
+          els.zoomRange.max = String(caps.zoom.max || 1);
+          els.zoomRange.step = String(caps.zoom.step || 0.1);
+          const settings = state.cameraTrack.getSettings ? state.cameraTrack.getSettings() : {};
+          els.zoomRange.value = String(settings.zoom || caps.zoom.min || 1);
+        }
+        if (caps.torch) {
+          state.torchSupported = true;
+          els.torchBtn.disabled = false;
+        }
+      }
+
+      async function setZoom(value) {
+        if (!state.cameraTrack || !state.zoomSupported) return;
+        try {
+          await state.cameraTrack.applyConstraints({ advanced: [{ zoom: Number(value) }] });
+        } catch (err) {
+          logDev("zoom failed", err);
+        }
+      }
+
+      async function toggleTorch() {
+        if (!state.cameraTrack || !state.torchSupported) return;
+        state.torchOn = !state.torchOn;
+        try {
+          await state.cameraTrack.applyConstraints({ advanced: [{ torch: state.torchOn }] });
+          els.torchBtn.setAttribute("aria-pressed", String(state.torchOn));
+          els.torchBtn.classList.toggle("toggle-active", state.torchOn);
+        } catch (err) {
+          state.torchOn = !state.torchOn;
+          safeSetText(els.previewStatus, "Torch control is not supported by this camera.", "status-warn");
+          logDev("torch failed", err);
+        }
+      }
+
+      function mapMediaError(err) {
+        if (!err) return "Unable to access camera.";
+        if (err.name === "NotAllowedError") return "Camera permission denied. Allow access and try again.";
+        if (err.name === "NotFoundError") return "No camera found on this device.";
+        if (err.name === "NotReadableError") return "Camera is already in use by another app.";
+        if (err.name === "OverconstrainedError") return "Requested camera settings are not supported.";
+        if (err.name === "AbortError") return "Camera startup was interrupted. Try again.";
+        return "Unable to start camera. Please retry.";
+      }
+
+      function switchMode(mode) {
+        if (state.uploading) return;
+        if (mode !== "photo" && mode !== "video") return;
+        if (state.selectedMode === mode) return;
+        state.selectedMode = mode;
+        els.modePhoto.classList.toggle("toggle-active", mode === "photo");
+        els.modeVideo.classList.toggle("toggle-active", mode === "video");
+        els.modePhoto.setAttribute("aria-pressed", String(mode === "photo"));
+        els.modeVideo.setAttribute("aria-pressed", String(mode === "video"));
+        if (state.mediaRecorder && state.mediaRecorder.state === "recording") {
+          stopRecording(false);
+        }
+        safeSetText(els.previewStatus, mode === "photo" ? "Photo mode ready." : "Video mode ready.", "status-ok");
+      }
+
+      function setGrid(on) {
+        state.gridOn = !!on;
+        els.gridOverlay.classList.toggle("on", state.gridOn);
+        els.gridBtn.setAttribute("aria-pressed", String(state.gridOn));
+        els.gridBtn.classList.toggle("toggle-active", state.gridOn);
+      }
+
+      function setTimer(seconds) {
+        state.selectedTimer = Number(seconds) || 0;
+      }
+
+      function triggerFocusRing(event) {
+        const rect = els.previewShell.getBoundingClientRect();
+        const clientX = event.clientX || (event.touches && event.touches[0] ? event.touches[0].clientX : rect.left + rect.width / 2);
+        const clientY = event.clientY || (event.touches && event.touches[0] ? event.touches[0].clientY : rect.top + rect.height / 2);
+        els.focusRing.style.left = (clientX - rect.left) + "px";
+        els.focusRing.style.top = (clientY - rect.top) + "px";
+        els.focusRing.classList.remove("active");
+        void els.focusRing.offsetWidth;
+        els.focusRing.classList.add("active");
+      }
+
+      function playShutterFlash() {
+        els.shutterFlash.classList.remove("flash");
+        void els.shutterFlash.offsetWidth;
+        els.shutterFlash.classList.add("flash");
+      }
+
+      async function beginCaptureFlow() {
+        if (!state.stream || !state.cameraTrack) {
+          safeSetText(els.previewStatus, "Camera is not ready. Please allow permissions first.", "status-error");
+          return;
+        }
+        if (state.selectedTimer > 0) {
+          const ok = await runCountdown(state.selectedTimer);
+          if (!ok) return;
+        }
+        if (state.selectedMode === "photo") {
+          capturePhoto();
         } else {
-          state.zoomSupported = false;
-          zoom.disabled = true;
+          toggleVideoRecording();
         }
-
-        $('torchBtn').disabled = !caps.torch;
-        return stream;
       }
 
-      async function runTimer() {
-        if (!state.timerSec) return;
-        for (let i = state.timerSec; i > 0; i--) {
-          setStatus(`Capturing in ${i}...`);
-          await new Promise(r => setTimeout(r, 1000));
-        }
-        setStatus('');
-      }
-
-      function capturePhotoBlob() {
-        return new Promise((resolve, reject) => {
-          const w = liveVideo.videoWidth;
-          const h = liveVideo.videoHeight;
-          if (!w || !h) return reject(new Error('Camera not ready.'));
-          captureCanvas.width = w;
-          captureCanvas.height = h;
-          const ctx = captureCanvas.getContext('2d');
-          if (!ctx) return reject(new Error('Canvas failed.'));
-          ctx.filter = FILTERS[state.filterIndex].css;
-          ctx.drawImage(liveVideo, 0, 0, w, h);
-          captureCanvas.toBlob((blob) => {
-            if (!blob) return reject(new Error('Invalid photo.'));
-            resolve(blob);
-          }, 'image/jpeg', 0.9);
+      function runCountdown(seconds) {
+        return new Promise(function (resolve) {
+          let remain = seconds;
+          els.timerOverlay.textContent = String(remain);
+          els.timerOverlay.classList.remove("hidden");
+          els.timerOverlay.classList.add("flex");
+          clearInterval(state.timerIntervalId);
+          state.timerIntervalId = setInterval(function () {
+            remain -= 1;
+            if (remain <= 0) {
+              clearInterval(state.timerIntervalId);
+              state.timerIntervalId = null;
+              els.timerOverlay.classList.add("hidden");
+              els.timerOverlay.classList.remove("flex");
+              resolve(true);
+              return;
+            }
+            els.timerOverlay.textContent = String(remain);
+          }, 1000);
         });
       }
 
-      async function takePhoto() {
-        try {
-          await runTimer();
-          const blob = await capturePhotoBlob();
-          clearCapture();
-          state.capturedBlob = blob;
-          state.capturedKind = 'photo';
-          state.capturedUrl = URL.createObjectURL(blob);
+      function capturePhoto() {
+        if (!state.stream || !state.cameraTrack) return;
+        const video = els.liveVideo;
+        const settings = state.cameraTrack.getSettings ? state.cameraTrack.getSettings() : {};
+        const width = settings.width || video.videoWidth || 1280;
+        const height = settings.height || video.videoHeight || 720;
 
-          previewImg.src = state.capturedUrl;
-          previewImg.style.filter = FILTERS[state.filterIndex].css;
-          setHidden('previewImg', false);
-          setHidden('previewVid', true);
-          showPanel('previewOverlay', true);
-          setStatus('Photo preview ready.');
-        } catch (e) {
-          toast(e.message || 'Photo capture failed.', 'error');
+        els.captureCanvas.width = width;
+        els.captureCanvas.height = height;
+        const ctx = els.captureCanvas.getContext("2d");
+        if (!ctx) {
+          safeSetText(els.previewStatus, "Photo capture is unsupported on this browser.", "status-error");
+          return;
         }
-      }
+        ctx.filter = cameraFilterCss(state.selectedFilter);
+        ctx.drawImage(video, 0, 0, width, height);
+        playShutterFlash();
 
-      function recordingMime() {
-        const list = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4'];
-        for (const m of list) if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) return m;
-        return '';
-      }
+        let quality = getAdaptivePhotoQuality();
+        let dataUrl = els.captureCanvas.toDataURL("image/jpeg", quality);
+        while (dataUrl.length * 0.75 > CONFIG.maxPhotoBytes && quality > 0.5) {
+          quality -= 0.07;
+          dataUrl = els.captureCanvas.toDataURL("image/jpeg", Math.max(0.5, quality));
+        }
 
-      async function startRecording() {
-        if (!state.stream) return toast('Camera not ready.', 'error');
-        if (!window.MediaRecorder) return toast('MediaRecorder not supported.', 'error');
-        await runTimer();
+        const sizeBytes = estimateDataUrlBytes(dataUrl);
+        if (sizeBytes > CONFIG.maxPhotoBytes) {
+          safeSetText(els.previewStatus, "Photo too large. Move closer and retry.", "status-error");
+          return;
+        }
 
-        state.chunks = [];
-        const mimeType = recordingMime();
-        state.recorder = mimeType ? new MediaRecorder(state.stream, { mimeType }) : new MediaRecorder(state.stream);
-        state.recorder.ondataavailable = (e) => { if (e.data && e.data.size) state.chunks.push(e.data); };
-        state.recorder.onstop = () => {
-          const blob = new Blob(state.chunks, { type: state.recorder.mimeType || 'video/webm' });
-          clearCapture();
-          state.capturedBlob = blob;
-          state.capturedKind = 'video';
-          state.capturedUrl = URL.createObjectURL(blob);
-          previewVid.src = state.capturedUrl;
-          setHidden('previewVid', false);
-          setHidden('previewImg', true);
-          showPanel('previewOverlay', true);
-          setStatus('Video preview ready.');
+        state.captured = {
+          kind: "photo",
+          mimeType: "image/jpeg",
+          fileDataUrl: dataUrl,
+          sizeBytes: sizeBytes,
+          filterName: state.selectedFilter
         };
 
-        state.recorder.start(250);
-        state.isRecording = true;
-        state.recStart = Date.now();
-        $('recordBtn').classList.add('bg-red-600');
-        state.recTimer = setInterval(() => {
-          const sec = Math.floor((Date.now() - state.recStart) / 1000);
-          $('leftLabel').textContent = `Rec ${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
-          if (sec >= MAX_VIDEO_SECONDS) stopRecording();
-        }, 250);
+        els.photoPreview.src = dataUrl;
+        els.photoPreview.classList.remove("hidden");
+        els.liveVideo.classList.add("hidden");
+        els.capturedVideo.classList.add("hidden");
+        state.captureReady = true;
+        refreshCaptureUi();
+        safeSetText(els.previewStatus, "Photo captured. Review and upload.", "status-ok");
       }
 
-      function stopRecording() {
-        if (!state.isRecording) return;
-        state.isRecording = false;
-        clearInterval(state.recTimer);
-        state.recTimer = null;
-        $('recordBtn').classList.remove('bg-red-600');
-        $('leftLabel').textContent = 'Ready';
-        if (state.recorder && state.recorder.state !== 'inactive') state.recorder.stop();
+      function getSupportedRecorderMimeType() {
+        if (typeof MediaRecorder === "undefined") return "";
+        const candidates = [
+          "video/webm;codecs=vp9,opus",
+          "video/webm;codecs=vp8,opus",
+          "video/webm",
+          "video/mp4"
+        ];
+        for (let i = 0; i < candidates.length; i += 1) {
+          if (MediaRecorder.isTypeSupported(candidates[i])) {
+            return candidates[i];
+          }
+        }
+        return "";
       }
 
-      function blobToDataUrl(blob) {
-        return new Promise((resolve, reject) => {
-          const r = new FileReader();
-          r.onloadend = () => typeof r.result === 'string' ? resolve(r.result) : reject(new Error('Read failed'));
-          r.onerror = () => reject(new Error('Read failed'));
-          r.readAsDataURL(blob);
+      function toggleVideoRecording() {
+        if (!state.stream) return;
+        if (typeof MediaRecorder === "undefined") {
+          safeSetText(els.previewStatus, "MediaRecorder is unsupported in this browser.", "status-error");
+          return;
+        }
+        if (state.mediaRecorder && state.mediaRecorder.state === "recording") {
+          stopRecording(false);
+          return;
+        }
+
+        const mimeType = getSupportedRecorderMimeType();
+        if (!mimeType) {
+          safeSetText(els.previewStatus, "Video recording is unsupported in this browser.", "status-error");
+          return;
+        }
+
+        state.recordingChunks = [];
+        state.recordingSeconds = 0;
+
+        try {
+          state.mediaRecorder = new MediaRecorder(state.stream, { mimeType: mimeType, videoBitsPerSecond: 3500000 });
+        } catch (err) {
+          safeSetText(els.previewStatus, "Could not start video recording.", "status-error");
+          logDev("mediaRecorder error", err);
+          return;
+        }
+
+        state.mediaRecorder.ondataavailable = function (evt) {
+          if (evt.data && evt.data.size > 0) {
+            state.recordingChunks.push(evt.data);
+          }
+        };
+
+        state.mediaRecorder.onerror = function () {
+          safeSetText(els.previewStatus, "Recording error occurred. Please retry.", "status-error");
+          stopRecording(true);
+        };
+
+        state.mediaRecorder.onstop = function () {
+          clearInterval(state.recordingTickId);
+          clearTimeout(state.stopAtId);
+          state.recordingTickId = null;
+          state.stopAtId = null;
+          els.recordingBadge.classList.add("hidden");
+
+          if (!state.recordingChunks.length) {
+            safeSetText(els.previewStatus, "No video captured. Try recording again.", "status-warn");
+            return;
+          }
+
+          const blob = new Blob(state.recordingChunks, { type: mimeType });
+          if (blob.size > CONFIG.maxVideoBytes) {
+            safeSetText(els.previewStatus, "Video too large. Keep clips under 20 seconds.", "status-error");
+            return;
+          }
+
+          const previewUrl = URL.createObjectURL(blob);
+          state.captured = {
+            kind: "video",
+            mimeType: blob.type || mimeType,
+            blob: blob,
+            fileDataUrl: "",
+            sizeBytes: blob.size,
+            filterName: state.selectedFilter,
+            previewUrl: previewUrl
+          };
+
+          els.capturedVideo.src = previewUrl;
+          els.capturedVideo.classList.remove("hidden");
+          els.photoPreview.classList.add("hidden");
+          els.liveVideo.classList.add("hidden");
+
+          state.captureReady = true;
+          refreshCaptureUi();
+          safeSetText(els.previewStatus, "Video captured. Review and upload.", "status-ok");
+        };
+
+        state.mediaRecorder.start(250);
+        state.recordingTickId = setInterval(function () {
+          state.recordingSeconds += 1;
+          els.recordingTime.textContent = toClock(state.recordingSeconds);
+          if (state.recordingSeconds >= CONFIG.maxVideoSeconds) {
+            stopRecording(false);
+          }
+        }, 1000);
+        state.stopAtId = setTimeout(function () {
+          stopRecording(false);
+        }, CONFIG.maxVideoSeconds * 1000 + 120);
+
+        els.recordingTime.textContent = "00:00";
+        els.recordingBadge.classList.remove("hidden");
+        safeSetText(els.previewStatus, "Recording... tap Capture to stop.", "status-warn");
+      }
+
+      function stopRecording(forceDiscard) {
+        if (!state.mediaRecorder) return;
+        if (state.mediaRecorder.state === "recording") {
+          state.mediaRecorder.stop();
+        }
+        if (forceDiscard) {
+          state.recordingChunks = [];
+        }
+      }
+
+      function toClock(total) {
+        const mins = String(Math.floor(total / 60)).padStart(2, "0");
+        const secs = String(total % 60).padStart(2, "0");
+        return mins + ":" + secs;
+      }
+
+      function estimateDataUrlBytes(dataUrl) {
+        const commaIndex = dataUrl.indexOf(",");
+        if (commaIndex === -1) return 0;
+        const base64 = dataUrl.slice(commaIndex + 1);
+        return Math.ceil(base64.length * 0.75);
+      }
+
+      async function blobToDataUrl(blob) {
+        return new Promise(function (resolve, reject) {
+          const reader = new FileReader();
+          reader.onload = function () {
+            resolve(String(reader.result || ""));
+          };
+          reader.onerror = function () {
+            reject(new Error("Failed to read file blob"));
+          };
+          reader.readAsDataURL(blob);
         });
       }
 
-      function updateLocalStats(ok, kind) {
-        const key = 'studioStatsV1';
-        const today = new Date().toISOString().slice(0, 10);
-        const stats = JSON.parse(localStorage.getItem(key) || '{"totalUploads":0,"todayUploads":0,"totalPhotos":0,"totalVideos":0,"totalFailures":0,"todayFailures":0,"date":""}');
-        if (stats.date !== today) {
-          stats.date = today;
-          stats.todayUploads = 0;
-          stats.todayFailures = 0;
-        }
-        if (ok) {
-          stats.totalUploads++;
-          stats.todayUploads++;
-          if (kind === 'photo') stats.totalPhotos++;
-          if (kind === 'video') stats.totalVideos++;
-        } else {
-          stats.totalFailures++;
-          stats.todayFailures++;
-        }
-        localStorage.setItem(key, JSON.stringify(stats));
+      function refreshCaptureUi() {
+        const canUpload = state.captureReady && !state.uploading;
+        const canCapture = state.cameraEnabled && !state.uploading;
+        els.uploadBtn.disabled = !canUpload;
+        els.retakeBtn.disabled = !state.captureReady || state.uploading;
+        els.captureBtn.disabled = !canCapture;
       }
 
-      function renderStats() {
-        const s = JSON.parse(localStorage.getItem('studioStatsV1') || '{"totalUploads":0,"todayUploads":0,"totalPhotos":0,"totalVideos":0,"totalFailures":0,"todayFailures":0}');
-        $('statTotal').textContent = s.totalUploads || 0;
-        $('statToday').textContent = s.todayUploads || 0;
-        $('statPhotos').textContent = s.totalPhotos || 0;
-        $('statVideos').textContent = s.totalVideos || 0;
-        $('statFails').textContent = s.totalFailures || 0;
-        $('statTodayFails').textContent = s.todayFailures || 0;
-        $('statsStatus').textContent = 'Stats updated.';
+      function showLivePreview() {
+        if (state.captured && state.captured.previewUrl) {
+          URL.revokeObjectURL(state.captured.previewUrl);
+        }
+        state.captured = null;
+        state.captureReady = false;
+        els.photoPreview.classList.add("hidden");
+        els.capturedVideo.pause();
+        els.capturedVideo.removeAttribute("src");
+        els.capturedVideo.load();
+        els.capturedVideo.classList.add("hidden");
+        els.liveVideo.classList.remove("hidden");
+        refreshCaptureUi();
+        safeSetText(els.previewStatus, "Live preview restored.", "status-ok");
+      }
+
+      function setUploadProgress(percent) {
+        const p = Math.max(0, Math.min(100, Math.floor(percent)));
+        els.uploadProgressBar.style.width = p + "%";
+      }
+
+      function isTemporaryUploadError(msg) {
+        const text = (msg || "").toLowerCase();
+        return text.includes("timeout") || text.includes("server") || text.includes("rate") || text.includes("network") || text.includes("invalid backend response");
+      }
+
+      function mapBackendError(err) {
+        const msg = String(err || "").toLowerCase();
+        if (msg.includes("invalid token")) return "Invalid token.";
+        if (msg.includes("invalid pin")) return "Invalid PIN.";
+        if (msg.includes("invalid origin")) return "Invalid origin for this app.";
+        if (msg.includes("invalid uploadid")) return "Upload identifier rejected. Retry capture and upload.";
+        if (msg.includes("folder")) return "Drive folder unavailable.";
+        if (msg.includes("rate")) return "Rate limit reached. Please wait and retry.";
+        if (msg.includes("server")) return "Apps Script server error. Please retry.";
+        return err || "Upload failed.";
+      }
+
+      function createUploadId() {
+        const rand = Math.random().toString(36).slice(2, 12);
+        return "upl_" + rand;
       }
 
       async function uploadCapture() {
-        if (state.uploadInProgress) return;
-        if (!state.capturedBlob || !state.capturedKind) return toast('No capture to upload.', 'error');
-        if (!navigator.onLine) return toast('No internet connection.', 'error');
+        if (!state.captureReady || !state.captured || state.uploading) {
+          return;
+        }
+        if (window.location.origin !== CONFIG.siteOrigin) {
+          safeSetText(els.uploadMessage, "Invalid origin. Open the app from the official GitHub Pages URL.", "status-error");
+          return;
+        }
+        if (!navigator.onLine) {
+          safeSetText(els.uploadMessage, "No internet connection. Reconnect and try again.", "status-error");
+          return;
+        }
 
-        state.uploadInProgress = true;
-        $('uploadBtn').disabled = true;
-        $('retakeBtn').disabled = true;
-        setStatus('Uploading...');
+        state.uploading = true;
+        refreshCaptureUi();
+        setUploadProgress(8);
+        safeSetText(els.uploadMessage, "Uploading...", "status-warn");
 
         try {
-          const dataUrl = await blobToDataUrl(state.capturedBlob);
-          const fd = new FormData();
-          fd.append('fileDataUrl', dataUrl);
-          fd.append('mimeType', state.capturedBlob.type || (state.capturedKind === 'photo' ? 'image/jpeg' : 'video/webm'));
-          fd.append('sizeBytes', String(state.capturedBlob.size));
-          fd.append('fileKind', state.capturedKind);
-          fd.append('filterName', FILTERS[state.filterIndex].name);
-          fd.append('origin', window.location.origin);
-          fd.append('sessionId', state.sessionId);
-          fd.append('appToken', APP_SECURITY_TOKEN);
-          fd.append('entryPin', ENTRY_PIN);
+          if (state.captured.kind === "video" && !state.captured.fileDataUrl) {
+            state.captured.fileDataUrl = await blobToDataUrl(state.captured.blob);
+          }
 
-          // Avoid XHR CORS preflight; Apps Script accepts this form body.
-          await fetch(GOOGLE_APPS_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: fd });
+          const payload = {
+            action: "upload",
+            uploadId: createUploadId(),
+            fileDataUrl: state.captured.fileDataUrl,
+            mimeType: state.captured.mimeType,
+            sizeBytes: String(state.captured.sizeBytes),
+            fileKind: state.captured.kind,
+            filterName: state.captured.filterName || "natural",
+            origin: window.location.origin,
+            sessionId: state.sessionId,
+            appToken: CONFIG.appToken,
+            entryPin: CONFIG.entryPin,
+            driveFolderId: CONFIG.driveFolderId
+          };
 
-          updateLocalStats(true, state.capturedKind);
-          clearCapture();
-          showPanel('previewOverlay', false);
-          showPanel('successPanel', true);
-          setStatus('Uploaded successfully');
-          toast('Uploaded successfully', 'success');
-        } catch (e) {
-          updateLocalStats(false, state.capturedKind);
-          setStatus('Upload failed');
-          toast(e.message || 'Upload failed.', 'error');
+          let lastError = "";
+          let verifiedSuccess = false;
+          let pendingVerification = false;
+
+          for (let attempt = 1; attempt <= CONFIG.maxUploadRetries; attempt += 1) {
+            setUploadProgress(Math.min(90, 15 + attempt * 20));
+            try {
+              const result = await postToAppsScript(payload, false);
+              if (result.mode === "verified" && result.data && result.data.success === true) {
+                verifiedSuccess = true;
+                break;
+              }
+              if (result.mode === "verified" && (!result.data || result.data.success !== true)) {
+                const backendErr = mapBackendError(result.data && result.data.error ? result.data.error : "Invalid backend response");
+                lastError = backendErr;
+                if (!isTemporaryUploadError(backendErr)) {
+                  break;
+                }
+                await waitMs(500 * attempt);
+                continue;
+              }
+
+              if (result.mode === "opaque") {
+                pendingVerification = true;
+                break;
+              }
+            } catch (err) {
+              lastError = mapBackendError(err && err.message ? err.message : "Upload failed");
+              if (!isTemporaryUploadError(lastError) || attempt === CONFIG.maxUploadRetries) {
+                break;
+              }
+              await waitMs(450 * attempt);
+            }
+          }
+
+          if (verifiedSuccess) {
+            setUploadProgress(100);
+            safeSetText(els.uploadMessage, "Uploaded successfully", "status-ok");
+            safeSetText(els.previewStatus, "Uploaded successfully", "status-ok");
+            incrementLocalStats(true, state.captured.kind);
+            injectCaptureAnotherButton();
+            loadStats();
+          } else if (pendingVerification) {
+            await submitUploadFormFallback(payload);
+            safeSetText(els.uploadMessage, "Verifying upload...", "status-warn");
+            const verification = await verifyUploadAfterOpaque(payload);
+            if (verification.ok) {
+              setUploadProgress(100);
+              safeSetText(els.uploadMessage, "Uploaded successfully", "status-ok");
+              safeSetText(els.previewStatus, "Uploaded successfully", "status-ok");
+              incrementLocalStats(true, state.captured.kind);
+              injectCaptureAnotherButton();
+              loadStats();
+            } else {
+              setUploadProgress(100);
+              const extra = verification.error && verification.error !== "Upload not yet confirmed" ? " (" + mapBackendError(verification.error) + ")" : "";
+              safeSetText(els.uploadMessage, "Upload request sent. Please verify the file in Google Drive." + extra, "status-warn");
+              safeSetText(els.previewStatus, "Upload request sent, verification pending.", "status-warn");
+            }
+          } else {
+            setUploadProgress(0);
+            safeSetText(els.uploadMessage, lastError || "Upload failed. Please retry.", "status-error");
+            safeSetText(els.previewStatus, "Upload failed. You can retry without recapturing.", "status-error");
+            incrementLocalStats(false, null);
+          }
+        } catch (err) {
+          logDev("upload fatal", err);
+          setUploadProgress(0);
+          safeSetText(els.uploadMessage, "Upload failed. Please retry.", "status-error");
+          incrementLocalStats(false, null);
         } finally {
-          state.uploadInProgress = false;
-          $('uploadBtn').disabled = false;
-          $('retakeBtn').disabled = false;
+          state.uploading = false;
+          refreshCaptureUi();
         }
       }
 
-      async function setTorch(on) {
-        if (!state.stream) return;
-        const track = state.stream.getVideoTracks()[0];
-        if (!track) return;
-        try {
-          await track.applyConstraints({ advanced: [{ torch: !!on }] });
-          state.torchEnabled = !!on;
-          $('torchBtn').classList.toggle('bg-sky-400', state.torchEnabled);
-          $('torchBtn').classList.toggle('text-slate-900', state.torchEnabled);
-        } catch (_) {
-          toast('Torch not supported.', 'error');
+      function injectCaptureAnotherButton() {
+        let existing = document.getElementById("captureAnotherBtn");
+        if (existing) return;
+        existing = document.createElement("button");
+        existing.id = "captureAnotherBtn";
+        existing.type = "button";
+        existing.className = "mt-2 w-full rounded-xl bg-cyan-500/90 px-4 py-2 font-semibold text-slate-950 transition hover:bg-cyan-400";
+        existing.textContent = "Capture Another";
+        existing.addEventListener("click", function () {
+          showLivePreview();
+          removeCaptureAnotherButton();
+          setUploadProgress(0);
+        });
+        els.uploadMessage.parentElement.appendChild(existing);
+      }
+
+      function removeCaptureAnotherButton() {
+        const existing = document.getElementById("captureAnotherBtn");
+        if (existing) {
+          existing.remove();
         }
       }
 
-      async function setZoom(v) {
-        if (!state.stream || !state.zoomSupported) return;
-        const track = state.stream.getVideoTracks()[0];
-        try { await track.applyConstraints({ advanced: [{ zoom: Number(v) }] }); } catch (_) {}
-      }
-
-      async function flipCamera() {
-        state.facingMode = state.facingMode === 'environment' ? 'user' : 'environment';
-        try { await requestMedia(true, true); } catch (e) { toast(e.message || 'Flip failed.', 'error'); }
-      }
-
-      // WebRTC manual signaling
-      function cleanupPeer() {
-        if (state.callPeer) {
-          try { state.callPeer.close(); } catch (_) {}
-          state.callPeer = null;
-        }
-        remoteCallVideo.srcObject = null;
-      }
-
-      function createPeer() {
-        cleanupPeer();
-        state.callCandidates = [];
-        const pc = new RTCPeerConnection({ iceServers: [{ urls: ['stun:stun.l.google.com:19302'] }] });
-        const remoteStream = new MediaStream();
-        remoteCallVideo.srcObject = remoteStream;
-        pc.ontrack = (e) => e.streams[0].getTracks().forEach(t => remoteStream.addTrack(t));
-        pc.onicecandidate = (e) => { if (e.candidate) state.callCandidates.push(e.candidate.toJSON()); };
-        if (state.stream) state.stream.getTracks().forEach(t => pc.addTrack(t, state.stream));
-        state.callPeer = pc;
-        return pc;
-      }
-
-      async function waitIce(pc) {
-        if (pc.iceGatheringState === 'complete') return;
-        await new Promise(resolve => {
-          const timer = setTimeout(done, 8000);
-          function onChange() { if (pc.iceGatheringState === 'complete') done(); }
-          function done() { clearTimeout(timer); pc.removeEventListener('icegatheringstatechange', onChange); resolve(); }
-          pc.addEventListener('icegatheringstatechange', onChange);
+      function waitMs(ms) {
+        return new Promise(function (resolve) {
+          setTimeout(resolve, ms);
         });
       }
 
-      async function applyCandidates(pc, list) {
-        if (!Array.isArray(list)) return;
-        for (const c of list) {
-          try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch (_) {}
+      async function verifyUploadAfterOpaque(uploadPayload) {
+        const verifyPayload = {
+          action: "verify_upload",
+          uploadId: uploadPayload.uploadId,
+          origin: uploadPayload.origin,
+          sessionId: uploadPayload.sessionId,
+          appToken: uploadPayload.appToken,
+          entryPin: uploadPayload.entryPin,
+          fileKind: uploadPayload.fileKind,
+          mimeType: uploadPayload.mimeType,
+          sizeBytes: uploadPayload.sizeBytes
+        };
+
+        let lastError = "Upload not yet confirmed";
+        for (let i = 0; i < 12; i += 1) {
+          try {
+            const response = await jsonpRequest(verifyPayload, 9000);
+            if (response && response.success === true) {
+              return { ok: true, error: "" };
+            }
+            if (response && response.error) {
+              lastError = String(response.error);
+            }
+          } catch (err) {
+            logDev("verify opaque failed", err);
+          }
+          await waitMs(1500);
+        }
+        return { ok: false, error: lastError };
+      }
+
+      function jsonpRequest(params, timeoutMs) {
+        return new Promise(function (resolve, reject) {
+          const callbackName = "cspJsonpCb_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
+          const timer = setTimeout(function () {
+            cleanup();
+            reject(new Error("Upload verification timeout"));
+          }, timeoutMs || 8000);
+
+          const script = document.createElement("script");
+          function cleanup() {
+            clearTimeout(timer);
+            if (script.parentNode) {
+              script.parentNode.removeChild(script);
+            }
+            try {
+              delete window[callbackName];
+            } catch (err) {
+              window[callbackName] = undefined;
+            }
+          }
+
+          window[callbackName] = function (data) {
+            cleanup();
+            resolve(data);
+          };
+
+          const url = new URL(CONFIG.appsScriptUrl);
+          Object.keys(params).forEach(function (key) {
+            url.searchParams.set(key, params[key]);
+          });
+          url.searchParams.set("callback", callbackName);
+          script.src = url.toString();
+          script.async = true;
+          script.onerror = function () {
+            cleanup();
+            reject(new Error("Upload verification failed"));
+          };
+          document.head.appendChild(script);
+        });
+      }
+
+      function submitUploadFormFallback(payload) {
+        return new Promise(function (resolve) {
+          const frameName = "cspUploadFrame_" + Date.now();
+          const iframe = document.createElement("iframe");
+          iframe.name = frameName;
+          iframe.style.display = "none";
+
+          const form = document.createElement("form");
+          form.method = "POST";
+          form.action = CONFIG.appsScriptUrl;
+          form.target = frameName;
+          form.style.display = "none";
+
+          Object.keys(payload).forEach(function (key) {
+            const input = document.createElement("input");
+            input.type = "hidden";
+            input.name = key;
+            input.value = String(payload[key]);
+            form.appendChild(input);
+          });
+
+          let cleaned = false;
+          function cleanup() {
+            if (cleaned) return;
+            cleaned = true;
+            setTimeout(function () {
+              if (form.parentNode) form.parentNode.removeChild(form);
+              if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+            }, 1200);
+          }
+
+          iframe.onload = function () {
+            cleanup();
+            resolve();
+          };
+
+          document.body.appendChild(iframe);
+          document.body.appendChild(form);
+          form.submit();
+          setTimeout(function () {
+            cleanup();
+            resolve();
+          }, 2500);
+        });
+      }
+
+      async function postToAppsScript(payload, noCorsMode) {
+        const body = new URLSearchParams(payload);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(function () {
+          controller.abort();
+        }, CONFIG.uploadTimeoutMs);
+
+        try {
+          const response = await fetch(CONFIG.appsScriptUrl, {
+            method: "POST",
+            mode: noCorsMode ? "no-cors" : "cors",
+            redirect: "follow",
+            cache: "no-store",
+            credentials: "omit",
+            body: body,
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+
+          if (noCorsMode || response.type === "opaque") {
+            return { mode: "opaque" };
+          }
+          const text = await response.text();
+          let json = null;
+          try {
+            json = JSON.parse(text);
+          } catch (err) {
+            throw new Error("Invalid backend response");
+          }
+          return { mode: "verified", data: json };
+        } catch (err) {
+          clearTimeout(timeoutId);
+          const msg = err && err.name === "AbortError" ? "Upload timeout" : (err && err.message ? err.message : "Network error");
+          if (!noCorsMode && (msg === "Failed to fetch" || msg.toLowerCase().includes("network"))) {
+            const fallback = await postToAppsScript(payload, true);
+            return fallback;
+          }
+          throw new Error(msg);
         }
       }
 
-      $('createOfferBtn').addEventListener('click', async () => {
+      function incrementLocalStats(success, kind) {
+        const day = new Date().toISOString().slice(0, 10);
+        const cached = getCachedStats();
+        const stats = Object.assign({
+          totalUploads: 0,
+          todayUploads: 0,
+          totalPhotos: 0,
+          totalVideos: 0,
+          totalFailures: 0,
+          todayFailures: 0,
+          dateMarker: day
+        }, cached || {});
+
+        if (stats.dateMarker !== day) {
+          stats.todayUploads = 0;
+          stats.todayFailures = 0;
+          stats.dateMarker = day;
+        }
+
+        if (success) {
+          stats.totalUploads += 1;
+          stats.todayUploads += 1;
+          if (kind === "photo") stats.totalPhotos += 1;
+          if (kind === "video") stats.totalVideos += 1;
+        } else {
+          stats.totalFailures += 1;
+          stats.todayFailures += 1;
+        }
+
+        localStorage.setItem(STORAGE_KEYS.statsCache, JSON.stringify(stats));
+      }
+
+      function getCachedStats() {
+        const raw = localStorage.getItem(STORAGE_KEYS.statsCache);
+        if (!raw) return null;
         try {
-          await requestMedia(false, true);
-          const pc = createPeer();
+          return JSON.parse(raw);
+        } catch (err) {
+          return null;
+        }
+      }
+
+      function applyStats(stats) {
+        const safe = Object.assign({
+          totalUploads: 0,
+          todayUploads: 0,
+          totalPhotos: 0,
+          totalVideos: 0,
+          totalFailures: 0,
+          todayFailures: 0
+        }, stats || {});
+        els.statTotalUploads.textContent = String(safe.totalUploads || 0);
+        els.statTodayUploads.textContent = String(safe.todayUploads || 0);
+        els.statTotalPhotos.textContent = String(safe.totalPhotos || 0);
+        els.statTotalVideos.textContent = String(safe.totalVideos || 0);
+        els.statTotalFailures.textContent = String(safe.totalFailures || 0);
+        els.statTodayFailures.textContent = String(safe.todayFailures || 0);
+      }
+
+      async function loadStats() {
+        const cached = getCachedStats();
+        if (cached) {
+          applyStats(cached);
+        }
+        safeSetText(els.statsMessage, "Loading server stats...", "");
+
+        const payload = {
+          action: "stats",
+          origin: window.location.origin,
+          sessionId: state.sessionId,
+          appToken: CONFIG.appToken,
+          entryPin: CONFIG.entryPin
+        };
+
+        try {
+          const result = await postToAppsScript(payload, false);
+          if (result.mode === "verified" && result.data && result.data.success === true && result.data.stats) {
+            applyStats(result.data.stats);
+            localStorage.setItem(STORAGE_KEYS.statsCache, JSON.stringify(Object.assign({}, result.data.stats, { dateMarker: new Date().toISOString().slice(0, 10) })));
+            safeSetText(els.statsMessage, "Server stats updated", "status-ok");
+          } else if (result.mode === "opaque") {
+            safeSetText(els.statsMessage, "Server stats could not be verified due to browser cross-origin limits.", "status-warn");
+          } else {
+            safeSetText(els.statsMessage, "Invalid backend response", "status-error");
+          }
+        } catch (err) {
+          safeSetText(els.statsMessage, "Server stats unavailable. Showing local cache.", "status-warn");
+        }
+      }
+
+      function switchTab(tab) {
+        const isStats = tab === "stats";
+        els.tabStats.classList.toggle("toggle-active", isStats);
+        els.tabCall.classList.toggle("toggle-active", !isStats);
+        els.tabStats.setAttribute("aria-selected", String(isStats));
+        els.tabCall.setAttribute("aria-selected", String(!isStats));
+        els.statsPanel.classList.toggle("hidden", !isStats);
+        els.callPanel.classList.toggle("hidden", isStats);
+      }
+
+      async function setupCallLocalStream() {
+        if (state.webrtc.localStream) return state.webrtc.localStream;
+        try {
+          state.webrtc.localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+          els.callLocalVideo.srcObject = state.webrtc.localStream;
+        } catch (err) {
+          try {
+            state.webrtc.localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            els.callLocalVideo.srcObject = state.webrtc.localStream;
+            setCallStatus("Microphone unavailable. Camera-only call preview.");
+          } catch (err2) {
+            throw new Error(mapMediaError(err2));
+          }
+        }
+        return state.webrtc.localStream;
+      }
+
+      async function ensurePeerConnection() {
+        if (state.webrtc.pc) return state.webrtc.pc;
+        const pc = new RTCPeerConnection({
+          iceServers: [
+            { urls: "stun:stun.l.google.com:19302" },
+            { urls: "stun:stun1.l.google.com:19302" }
+          ]
+        });
+        const localStream = await setupCallLocalStream();
+        localStream.getTracks().forEach(function (track) {
+          pc.addTrack(track, localStream);
+        });
+
+        pc.ontrack = function (event) {
+          const [remoteStream] = event.streams;
+          if (remoteStream) {
+            els.callRemoteVideo.srcObject = remoteStream;
+          }
+        };
+
+        pc.onicecandidate = function (event) {
+          if (event.candidate) return;
+          const local = pc.localDescription;
+          if (local) {
+            els.signalOutput.value = JSON.stringify({ type: local.type, sdp: local.sdp }, null, 2);
+          }
+        };
+
+        pc.onconnectionstatechange = function () {
+          const status = pc.connectionState;
+          if (status === "failed" || status === "disconnected") {
+            setCallStatus("Connection issue detected. Your network may require a TURN server.");
+          } else {
+            setCallStatus("Connection state: " + status);
+          }
+        };
+
+        state.webrtc.pc = pc;
+        return pc;
+      }
+
+      function setCallStatus(message) {
+        safeSetText(els.callStatus, message, "");
+      }
+
+      async function createOffer() {
+        if (!window.RTCPeerConnection) {
+          setCallStatus("WebRTC is unsupported in this browser.");
+          return;
+        }
+        try {
+          const pc = await ensurePeerConnection();
           const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
           await pc.setLocalDescription(offer);
-          await waitIce(pc);
-          $('outgoingSignal').value = JSON.stringify({
-            type: 'offer',
-            sdp: pc.localDescription.sdp,
-            candidates: state.callCandidates
-          }, null, 2);
-          setCallStatus('Offer created.');
-        } catch (e) {
-          setCallStatus(e.message || 'Offer failed.');
+          setCallStatus("Offer created. Share it with your peer.");
+        } catch (err) {
+          setCallStatus("Could not create offer.");
+          logDev("offer error", err);
         }
-      });
+      }
 
-      $('createAnswerBtn').addEventListener('click', async () => {
+      async function createAnswerFromRemoteOffer() {
+        if (!window.RTCPeerConnection) {
+          setCallStatus("WebRTC is unsupported in this browser.");
+          return;
+        }
+        const incomingText = (els.signalInput.value || "").trim();
+        if (!incomingText) {
+          setCallStatus("Paste remote offer JSON first.");
+          return;
+        }
         try {
-          const incoming = JSON.parse($('incomingSignal').value || '{}');
-          if (!incoming.sdp || incoming.type !== 'offer') return setCallStatus('Paste valid offer first.');
-          await requestMedia(false, true);
-          const pc = createPeer();
-          await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: incoming.sdp }));
-          await applyCandidates(pc, incoming.candidates);
+          const parsed = JSON.parse(incomingText);
+          if (!parsed || parsed.type !== "offer" || !parsed.sdp) {
+            setCallStatus("Incoming JSON must be an offer.");
+            return;
+          }
+          const pc = await ensurePeerConnection();
+          await pc.setRemoteDescription(new RTCSessionDescription(parsed));
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
-          await waitIce(pc);
-          $('outgoingSignal').value = JSON.stringify({
-            type: 'answer',
-            sdp: pc.localDescription.sdp,
-            candidates: state.callCandidates
-          }, null, 2);
-          setCallStatus('Answer created.');
-        } catch (e) {
-          setCallStatus(e.message || 'Answer failed.');
+          setCallStatus("Answer created. Share it with your peer.");
+        } catch (err) {
+          setCallStatus("Failed to create answer from incoming offer.");
+          logDev("answer error", err);
         }
-      });
-
-      $('applySignalBtn').addEventListener('click', async () => {
-        try {
-          if (!state.callPeer) return setCallStatus('Create offer/answer first.');
-          const incoming = JSON.parse($('incomingSignal').value || '{}');
-          if (incoming.type === 'answer' && incoming.sdp) {
-            await state.callPeer.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: incoming.sdp }));
-            await applyCandidates(state.callPeer, incoming.candidates);
-            setCallStatus('Answer applied.');
-            return;
-          }
-          if (incoming.type === 'offer' && incoming.sdp) {
-            await state.callPeer.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: incoming.sdp }));
-            await applyCandidates(state.callPeer, incoming.candidates);
-            const ans = await state.callPeer.createAnswer();
-            await state.callPeer.setLocalDescription(ans);
-            await waitIce(state.callPeer);
-            $('outgoingSignal').value = JSON.stringify({
-              type: 'answer',
-              sdp: state.callPeer.localDescription.sdp,
-              candidates: state.callCandidates
-            }, null, 2);
-            setCallStatus('Offer applied, answer generated.');
-            return;
-          }
-          setCallStatus('Invalid signal.');
-        } catch (e) {
-          setCallStatus(e.message || 'Apply failed.');
-        }
-      });
-
-      $('copySignalBtn').addEventListener('click', async () => {
-        try { await navigator.clipboard.writeText($('outgoingSignal').value || ''); setCallStatus('Copied.'); }
-        catch (_) { setCallStatus('Copy failed.'); }
-      });
-
-      $('endCallBtn').addEventListener('click', () => { cleanupPeer(); $('incomingSignal').value = ''; $('outgoingSignal').value = ''; setCallStatus('Call ended.'); });
-
-      // PIN lock
-      function unlockAttempt() {
-        const typed = String($('pinInput').value || '').trim();
-        if (!typed) return setPinStatus('Please enter PIN.');
-        if (!ENTRY_PIN_REGEX.test(typed)) return setPinStatus('PIN must be 4-6 digits.');
-        if (typed !== ENTRY_PIN) return setPinStatus('Wrong PIN.');
-        sessionStorage.setItem('studioUnlocked', '1');
-        $('pinInput').value = '';
-        setPinStatus('');
-        showPanel('pinPanel', false);
-        initMedia();
       }
 
-      function bootLock() {
-        const unlocked = sessionStorage.getItem('studioUnlocked') === '1';
-        if (unlocked) {
-          showPanel('pinPanel', false);
-          initMedia();
+      async function applyIncomingSignal() {
+        const incomingText = (els.signalInput.value || "").trim();
+        if (!incomingText) {
+          setCallStatus("Paste incoming signal first.");
+          return;
+        }
+        try {
+          const parsed = JSON.parse(incomingText);
+          const pc = await ensurePeerConnection();
+          if (parsed.type === "answer" || parsed.type === "offer") {
+            await pc.setRemoteDescription(new RTCSessionDescription(parsed));
+            setCallStatus("Incoming " + parsed.type + " applied.");
+            if (parsed.type === "offer") {
+              const answer = await pc.createAnswer();
+              await pc.setLocalDescription(answer);
+              setCallStatus("Offer applied. Answer created in outgoing box.");
+            }
+          } else if (parsed.candidate) {
+            await pc.addIceCandidate(parsed);
+            setCallStatus("ICE candidate applied.");
+          } else {
+            setCallStatus("Unsupported signal payload.");
+          }
+        } catch (err) {
+          setCallStatus("Invalid signal JSON.");
+          logDev("apply incoming", err);
+        }
+      }
+
+      async function copySignalOut() {
+        const text = els.signalOutput.value || "";
+        if (!text) {
+          setCallStatus("No signal available to copy.");
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(text);
+          setCallStatus("Signal copied.");
+        } catch (err) {
+          setCallStatus("Copy failed. Select and copy manually.");
+        }
+      }
+
+      function stopCallSession() {
+        if (state.webrtc.pc) {
+          state.webrtc.pc.ontrack = null;
+          state.webrtc.pc.onicecandidate = null;
+          state.webrtc.pc.onconnectionstatechange = null;
+          state.webrtc.pc.close();
+          state.webrtc.pc = null;
+        }
+        if (state.webrtc.localStream) {
+          state.webrtc.localStream.getTracks().forEach(function (track) {
+            track.stop();
+          });
+          state.webrtc.localStream = null;
+        }
+        els.callLocalVideo.srcObject = null;
+        els.callRemoteVideo.srcObject = null;
+        els.signalOutput.value = "";
+        setCallStatus("Call ended.");
+      }
+
+      async function reconnectCall() {
+        stopCallSession();
+        try {
+          await setupCallLocalStream();
+          setCallStatus("Local stream refreshed. Create a new offer.");
+        } catch (err) {
+          setCallStatus("Reconnect failed.");
+        }
+      }
+
+      function toggleMute() {
+        const stream = state.webrtc.localStream;
+        if (!stream) {
+          setCallStatus("Start a call first.");
+          return;
+        }
+        state.webrtc.isMuted = !state.webrtc.isMuted;
+        stream.getAudioTracks().forEach(function (track) {
+          track.enabled = !state.webrtc.isMuted;
+        });
+        els.toggleMuteBtn.setAttribute("aria-pressed", String(state.webrtc.isMuted));
+        els.toggleMuteBtn.classList.toggle("toggle-active", state.webrtc.isMuted);
+        els.toggleMuteBtn.textContent = state.webrtc.isMuted ? "Unmute Mic" : "Mute Mic";
+      }
+
+      function toggleCallCamera() {
+        const stream = state.webrtc.localStream;
+        if (!stream) {
+          setCallStatus("Start a call first.");
+          return;
+        }
+        state.webrtc.cameraEnabled = !state.webrtc.cameraEnabled;
+        stream.getVideoTracks().forEach(function (track) {
+          track.enabled = state.webrtc.cameraEnabled;
+        });
+        els.toggleCallCamBtn.setAttribute("aria-pressed", String(state.webrtc.cameraEnabled));
+        els.toggleCallCamBtn.classList.toggle("toggle-active", state.webrtc.cameraEnabled);
+        els.toggleCallCamBtn.textContent = state.webrtc.cameraEnabled ? "Camera On" : "Camera Off";
+      }
+
+      function bindEvents() {
+        els.pinForm.addEventListener("submit", handlePinSubmit);
+        els.modePhoto.addEventListener("click", function () { switchMode("photo"); });
+        els.modeVideo.addEventListener("click", function () { switchMode("video"); });
+        els.gridBtn.addEventListener("click", function () { setGrid(!state.gridOn); });
+        els.captureBtn.addEventListener("click", beginCaptureFlow);
+        els.retakeBtn.addEventListener("click", showLivePreview);
+        els.uploadBtn.addEventListener("click", uploadCapture);
+        els.enableCameraBtn.addEventListener("click", enableCameraOnly);
+        els.enableMicBtn.addEventListener("click", enableMicrophone);
+        els.studioMicBtn.addEventListener("click", toggleStudioMic);
+        els.switchCameraBtn.addEventListener("click", async function () {
+          if (!state.cameraEnabled) {
+            safeSetText(els.previewStatus, "Enable camera first.", "status-warn");
+            return;
+          }
+          state.usingFrontCamera = !state.usingFrontCamera;
+          await initCamera(state.micEnabled);
+        });
+        els.filterSelect.addEventListener("change", function () {
+          state.selectedFilter = els.filterSelect.value;
+          applyFilterToPreview();
+        });
+        els.timerSelect.addEventListener("change", function () {
+          setTimer(els.timerSelect.value);
+        });
+        els.zoomRange.addEventListener("input", function () {
+          setZoom(els.zoomRange.value);
+        });
+        els.torchBtn.addEventListener("click", toggleTorch);
+        els.previewShell.addEventListener("pointerdown", triggerFocusRing);
+        els.tabStats.addEventListener("click", function () { switchTab("stats"); });
+        els.tabCall.addEventListener("click", function () { switchTab("call"); });
+        els.refreshStatsBtn.addEventListener("click", loadStats);
+        els.createOfferBtn.addEventListener("click", createOffer);
+        els.createAnswerBtn.addEventListener("click", createAnswerFromRemoteOffer);
+        els.applyIncomingBtn.addEventListener("click", applyIncomingSignal);
+        els.copySignalBtn.addEventListener("click", copySignalOut);
+        els.endCallBtn.addEventListener("click", stopCallSession);
+        els.reconnectCallBtn.addEventListener("click", reconnectCall);
+        els.toggleMuteBtn.addEventListener("click", toggleMute);
+        els.toggleCallCamBtn.addEventListener("click", toggleCallCamera);
+        els.lockAgainBtn.addEventListener("click", resetToLock);
+
+        window.addEventListener("online", setOnlineBadge);
+        window.addEventListener("offline", setOnlineBadge);
+
+        document.addEventListener("visibilitychange", function () {
+          if (document.hidden) {
+            stopRecording(false);
+          }
+        });
+
+        window.addEventListener("beforeunload", function () {
+          stopRecording(true);
+          stopMainStream();
+          stopCallSession();
+        });
+
+        window.addEventListener("pagehide", function () {
+          stopRecording(true);
+          stopMainStream();
+          stopCallSession();
+        });
+      }
+
+      function bootstrap() {
+        state.sessionId = getSessionId();
+        setOnlineBadge();
+        applyFilterToPreview();
+        setGrid(false);
+        updateStudioMicButton();
+        updatePermissionPanel();
+        refreshCaptureUi();
+        updatePinLockUi();
+        setInterval(updatePinLockUi, 1000);
+
+        if (window.location.origin !== CONFIG.siteOrigin) {
+          safeSetText(els.uploadMessage, "Warning: This origin is not allowed by backend policy.", "status-warn");
+        }
+
+        if (sessionStorage.getItem(STORAGE_KEYS.unlockSession) === "1") {
+          unlockStudio();
         } else {
-          showPanel('pinPanel', true);
+          els.pinInput.value = "";
         }
       }
 
-      async function initMedia() {
-        showPanel('permissionPanel', true);
-        try {
-          await requestMedia(true, true);
-          showPanel('permissionPanel', false);
-          setStatus('Camera ready.');
-        } catch (e) {
-          $('permissionText').textContent = e.message || 'Permission denied.';
-          setStatus('Permission required.');
-        }
-      }
-
-      // Events
-      $('unlockBtn').addEventListener('click', unlockAttempt);
-      $('pinInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') unlockAttempt(); });
-      $('grantBtn').addEventListener('click', initMedia);
-
-      $('filterBtn').addEventListener('click', () => {
-        state.filterIndex = (state.filterIndex + 1) % FILTERS.length;
-        applyFilter();
-      });
-
-      $('flipBtn').addEventListener('click', flipCamera);
-      $('gridBtn').addEventListener('click', () => {
-        state.gridEnabled = !state.gridEnabled;
-        $('gridOverlay').classList.toggle('active', state.gridEnabled);
-      });
-
-      $('torchBtn').addEventListener('click', () => setTorch(!state.torchEnabled));
-      $('zoomSlider').addEventListener('input', (e) => setZoom(e.target.value));
-
-      $('timer0Btn').addEventListener('click', () => { state.timerSec = 0; setTimerUI(); });
-      $('timer3Btn').addEventListener('click', () => { state.timerSec = 3; setTimerUI(); });
-      $('timer5Btn').addEventListener('click', () => { state.timerSec = 5; setTimerUI(); });
-
-      $('photoModeBtn').addEventListener('click', () => { if (!state.isRecording) { state.mode = 'photo'; updateModeUI(); } });
-      $('videoModeBtn').addEventListener('click', () => { if (!state.isRecording) { state.mode = 'video'; updateModeUI(); } });
-
-      $('shutterBtn').addEventListener('click', takePhoto);
-      $('recordBtn').addEventListener('click', () => state.isRecording ? stopRecording() : startRecording());
-
-      $('retakeBtn').addEventListener('click', () => { clearCapture(); showPanel('previewOverlay', false); setStatus(''); });
-      $('uploadBtn').addEventListener('click', uploadCapture);
-      $('againBtn').addEventListener('click', () => { showPanel('successPanel', false); setStatus(''); });
-
-      $('openStatsBtn').addEventListener('click', () => { showPanel('statsPane', true); renderStats(); });
-      $('closeStatsBtn').addEventListener('click', () => showPanel('statsPane', false));
-      $('refreshStatsBtn').addEventListener('click', renderStats);
-$('uploadMainBtn').addEventListener('click', () => {
-  if (!state.capturedBlob) {
-    toast('Pehle photo ya video capture karo.', 'error');
-    return;
-  }
-  uploadCapture();
-});
-      
-      $('studioTab').addEventListener('click', () => {
-        $('studioTab').className = 'px-3 py-1 rounded-full bg-sky-400 text-slate-900 text-xs font-bold';
-        $('callTab').className = 'px-3 py-1 rounded-full bg-slate-800 border border-slate-600 text-xs font-bold';
-        showPanel('callPane', false);
-      });
-
-      $('callTab').addEventListener('click', async () => {
-        $('callTab').className = 'px-3 py-1 rounded-full bg-sky-400 text-slate-900 text-xs font-bold';
-        $('studioTab').className = 'px-3 py-1 rounded-full bg-slate-800 border border-slate-600 text-xs font-bold';
-        showPanel('callPane', true);
-        try { await requestMedia(false, true); } catch (_) {}
-      });
-
-      $('closeCallBtn').addEventListener('click', () => {
-        $('studioTab').click();
-      });
-
-      window.addEventListener('beforeunload', () => { stopRecording(); clearCapture(); stopStream(); cleanupPeer(); });
-
-      updateModeUI();
-      setTimerUI();
-      applyFilter();
-      bootLock();
+      bindEvents();
+      bootstrap();
     })();
   </script>
 </body>
