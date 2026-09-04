@@ -80,12 +80,14 @@
 
       <div id="toast" class="toast"></div>
 
-      <div id="bottomStudio" class="absolute inset-x-0 bottom-0 z-20 p-3 bg-gradient-to-t from-black/85 to-transparent">
+      <button id="uploadMainBtn" class="w-full mt-2 py-2 rounded-lg bg-sky-500 text-slate-900 font-semibold">Upload</button>
         <div id="statusText" class="text-center text-sm min-h-5"></div>
         <div class="flex justify-center gap-2 mt-2">
           <button id="photoModeBtn" class="px-4 py-1 rounded-full bg-sky-400 text-slate-900 text-xs font-bold">PHOTO</button>
           <button id="videoModeBtn" class="px-4 py-1 rounded-full bg-slate-800 border border-slate-600 text-xs font-bold">VIDEO</button>
         </div>
+      <button id="uploadMainBtn" class="w-full mt-2 py-2 rounded-lg bg-sky-500 text-slate-900 font-semibold">Upload</button>
+      
         <div class="grid grid-cols-3 items-center mt-2">
           <div id="leftLabel" class="text-xs text-center">Ready</div>
           <button id="shutterBtn" class="w-22 h-22 mx-auto rounded-full border-4 border-white bg-white/20"></button>
@@ -107,7 +109,7 @@
         <div class="w-[92%] max-w-md rounded-xl border border-slate-600 bg-slate-900/90 p-4 text-center">
           <h2 class="text-lg font-bold mb-1">Enter Access PIN</h2>
           <p class="text-sm text-slate-300">Enter your access PIN to continue.</p>
-          <input id="pinInput" maxlength="6" inputmode="numeric" class="w-full mt-3 p-2 rounded-lg bg-slate-800 border border-slate-600 text-center tracking-[6px] text-xl" placeholder="0930" />
+          <input id="pinInput" maxlength="6" inputmode="numeric" autocomplete="off" autocorrect="off" spellcheck="false" class="w-full mt-3 p-2 rounded-lg bg-slate-800 border border-slate-600 text-center tracking-[6px] text-xl" placeholder="Enter PIN" />
           <button id="unlockBtn" class="w-full mt-2 py-2 rounded-lg bg-sky-500 text-slate-900 font-semibold">Unlock Studio</button>
           <div id="pinStatus" class="text-sm mt-2 min-h-5"></div>
         </div>
@@ -727,7 +729,14 @@
       $('openStatsBtn').addEventListener('click', () => { showPanel('statsPane', true); renderStats(); });
       $('closeStatsBtn').addEventListener('click', () => showPanel('statsPane', false));
       $('refreshStatsBtn').addEventListener('click', renderStats);
-
+$('uploadMainBtn').addEventListener('click', () => {
+  if (!state.capturedBlob) {
+    toast('Pehle photo ya video capture karo.', 'error');
+    return;
+  }
+  uploadCapture();
+});
+      
       $('studioTab').addEventListener('click', () => {
         $('studioTab').className = 'px-3 py-1 rounded-full bg-sky-400 text-slate-900 text-xs font-bold';
         $('callTab').className = 'px-3 py-1 rounded-full bg-slate-800 border border-slate-600 text-xs font-bold';
