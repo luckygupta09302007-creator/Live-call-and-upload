@@ -356,6 +356,8 @@
         capturedKind: null,
         isUploading: false,
         sessionId: 'sess_' + Math.random().toString(36).slice(2, 10),
+        hasMic: false,
+        permissionReady: false,
 
         callPeer: null,
         callCandidates: [],
@@ -529,22 +531,70 @@
         }
       }
 
-      async function requestMainMedia() {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error("Browser doesn't support camera API.");
-        if (window.isSecureContext === false) throw new Error('HTTPS is required for camera and microphone.');
+      function friendlyMediaError(err) {
+        const name = err && err.name ? err.name : '';
+        if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+          return 'Camera/Mic permission denied. Please allow access in browser settings.';
+        }
+        if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+          return 'No camera or microphone device was found.';
+        }
+        if (name === 'NotReadableError' || name === 'TrackStartError') {
+          return 'Camera or microphone is busy in another app.';
+        }
+        if (name === 'OverconstrainedError' || name === 'ConstraintNotSatisfiedError') {
+          return 'Requested camera mode is not available on this device.';
+        }
+        return err && err.message ? err.message : 'Unable to access camera/mic.';
+      }
+
+      async function requestMainMedia(options = {}) {
+        const { force = true, preferAudio = true } = options;
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          throw new Error("Browser doesn't support camera API.");
+        }
+        if (window.isSecureContext === false) {
+          throw new Error('HTTPS is required for camera and microphone.');
+        }
+
+        if (!force && state.stream) {
+          return state.stream;
+        }
 
         stopMainStream();
 
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-          video: {
-            facingMode: { ideal: state.facingMode },
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
-          },
-        });
+        const videoConstraints = {
+          facingMode: { ideal: state.facingMode },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+        };
+
+        let stream = null;
+        let primaryError = null;
+
+        if (preferAudio) {
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: videoConstraints });
+          } catch (err) {
+            primaryError = err;
+          }
+        }
+
+        if (!stream) {
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: videoConstraints });
+            state.hasMic = false;
+            showToast('Microphone unavailable. Camera-only mode active.', 'error');
+          } catch (err2) {
+            throw new Error(friendlyMediaError(primaryError || err2));
+          }
+        } else {
+          state.hasMic = stream.getAudioTracks().length > 0;
+        }
 
         state.stream = stream;
+        state.permissionReady = true;
         liveVideo.srcObject = stream;
         localCallVideo.srcObject = stream;
         await liveVideo.play().catch(() => {});
@@ -552,8 +602,10 @@
         applyFilter();
 
         const adaptive = getAdaptivePhotoSettings();
-        rightLabel.textContent = adaptive.tag;
+        rightLabel.textContent = adaptive.tag + (state.hasMic ? ' + Mic' : ' Cam only');
         setupZoomAndTorch();
+
+        return stream;
       }
 
       async function initPermissionsOnLoad() {
@@ -561,11 +613,13 @@
         permissionText.textContent = 'Please allow camera + microphone once. This prevents repeated prompts later.';
         setStatus('Requesting camera & mic...', true);
         try {
-          await requestMainMedia();
+          await requestMainMedia({ force: true, preferAudio: true });
           permissionPanel.classList.remove('active');
-          setStatus('Camera + Mic ready ✓');
-          showToast('Permissions granted.', 'success');
+          setStatus(state.hasMic ? 'Camera + Mic ready ✓' : 'Camera ready (mic missing)');
+          showToast(state.hasMic ? 'Permissions granted.' : 'Camera granted, mic not available.', state.hasMic ? 'success' : 'error');
         } catch (err) {
+          state.permissionReady = false;
+          state.hasMic = false;
           const msg = err && err.message ? err.message : 'Permission request failed.';
           permissionText.textContent = msg + ' Tap "Grant Permission" and allow both camera and mic.';
           setStatus('Permission required');
@@ -575,11 +629,27 @@
       function pauseLive() { if (liveVideo.srcObject) liveVideo.pause(); }
       function resumeLive() { if (liveVideo.srcObject) liveVideo.play().catch(() => {}); }
 
+      async function ensureMicAccess() {
+        if (state.stream && state.stream.getAudioTracks().length > 0) {
+          state.hasMic = true;
+          return true;
+        }
+
+        try {
+          await requestMainMedia({ force: true, preferAudio: true });
+          state.hasMic = !!(state.stream && state.stream.getAudioTracks().length);
+          return state.hasMic;
+        } catch (_) {
+          state.hasMic = false;
+          return false;
+        }
+      }
+
       async function flipCamera() {
         if (state.isRecording || state.isUploading) return;
         state.facingMode = state.facingMode === 'environment' ? 'user' : 'environment';
         try {
-          await requestMainMedia();
+          await requestMainMedia({ force: true, preferAudio: state.hasMic });
           if (state.callPeer) {
             const v = state.stream.getVideoTracks()[0];
             const a = state.stream.getAudioTracks()[0];
@@ -694,10 +764,13 @@
         if (!window.MediaRecorder) return showToast('Video recording unsupported on this browser.', 'error');
         if (!state.stream) return showToast('Camera + mic not ready.', 'error');
 
-        const hasAudio = state.stream.getAudioTracks().length > 0;
-        if (!hasAudio) {
-          showToast('Microphone not available. Please allow mic permission.', 'error');
-          return;
+        if (state.stream.getAudioTracks().length === 0) {
+          const ok = await ensureMicAccess();
+          if (!ok) {
+            showToast('Microphone permission required for voice recording.', 'error');
+            setStatus('Enable microphone in browser settings and retry.');
+            return;
+          }
         }
 
         await runTimerIfNeeded();
@@ -999,7 +1072,11 @@
         if (!room) return;
         try {
           setCallStatus(isReconnect ? 'Reconnecting...' : 'Creating offer...', true);
-          await requestMainMedia();
+          await requestMainMedia({ force: !state.stream, preferAudio: true });
+          const micReady = await ensureMicAccess();
+          if (!micReady) {
+            setCallStatus('Mic permission missing. Call will be video-only until mic is enabled.');
+          }
           const pc = createPeer();
           const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
           await pc.setLocalDescription(offer);
@@ -1020,7 +1097,11 @@
           if (!validateIncomingRoom(incoming)) return;
 
           setCallStatus('Creating answer...', true);
-          await requestMainMedia();
+          await requestMainMedia({ force: !state.stream, preferAudio: true });
+          const micReady = await ensureMicAccess();
+          if (!micReady) {
+            setCallStatus('Mic permission missing. Answer will continue in video-only mode.', false);
+          }
           const pc = createPeer();
           await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: incoming.sdp }));
           await applyCandidates(pc, incoming.candidates);
@@ -1176,8 +1257,10 @@
       refreshCallMediaBtn.addEventListener('click', async () => {
         setCallStatus('Refreshing camera + mic...', true);
         try {
-          await requestMainMedia();
-          setCallStatus('Camera + mic refreshed ✓');
+          await requestMainMedia({ force: true, preferAudio: true });
+          const hasMic = !!(state.stream && state.stream.getAudioTracks().length);
+          state.hasMic = hasMic;
+          setCallStatus(hasMic ? 'Camera + mic refreshed ✓' : 'Camera refreshed (mic still unavailable).');
         } catch (err) {
           setCallStatus(err && err.message ? err.message : 'Refresh failed.');
         }
