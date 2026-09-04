@@ -352,11 +352,13 @@
     (() => {
       'use strict';
 
-      const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxWKd7bcQ2A-gMTTrzGSpsny4OtA9x3QRxvXfVzyuW874SHnxNOTMISgsSCaouWTN_-/exec
-';
-      const APP_SECURITY_TOKEN = 'REPLACE_WITH_STRONG_SHARED_TOKEN';
+      const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxWKd7bcQ2A-gMTTrzGSpsny4OtA9x3QRxvXfVzyuW874SHnxNOTMISgsSCaouWTN_-/exec';
+      const APP_SECURITY_TOKEN = 'YOUR_REAL_SECRET_TOKEN';
       // CHANGE THIS to your own 4-6 digit entry PIN and use the SAME value in Code.gs ENTRY_PIN.
       const ENTRY_PIN = '0930';
+      const MAX_VIDEO_SECONDS = 20;
+      const ENTRY_PIN_REGEX = /^\d{4,6}$/;
+      const ENTRY_LOCK_KEY = 'studioEntryLockStateV1';
 
       const FILTERS = [
         { name: 'Natural', css: 'none' },
@@ -510,6 +512,31 @@
         return !!ENTRY_PIN && ENTRY_PIN !== 'REPLACE_WITH_ENTRY_PIN';
       }
 
+      function loadEntryLockState() {
+        try {
+          const raw = localStorage.getItem(ENTRY_LOCK_KEY);
+          if (!raw) return;
+          const parsed = JSON.parse(raw);
+          state.entryAttempts = Number(parsed.entryAttempts) || 0;
+          state.entryLockedUntil = Number(parsed.entryLockedUntil) || 0;
+        } catch (_) {}
+      }
+
+      function saveEntryLockState() {
+        try {
+          localStorage.setItem(ENTRY_LOCK_KEY, JSON.stringify({
+            entryAttempts: state.entryAttempts,
+            entryLockedUntil: state.entryLockedUntil,
+          }));
+        } catch (_) {}
+      }
+
+      function clearEntryLockState() {
+        state.entryAttempts = 0;
+        state.entryLockedUntil = 0;
+        try { localStorage.removeItem(ENTRY_LOCK_KEY); } catch (_) {}
+      }
+
       function requireEntryUnlocked() {
         if (state.entryUnlocked) return true;
         showToast('Enter access PIN first.', 'error');
@@ -535,11 +562,14 @@
           setEntryLockStatus('Please enter PIN.');
           return;
         }
+        if (!ENTRY_PIN_REGEX.test(typed)) {
+          setEntryLockStatus('PIN must be 4-6 digits only.');
+          return;
+        }
 
         if (typed === String(ENTRY_PIN)) {
           state.entryUnlocked = true;
-          state.entryAttempts = 0;
-          state.entryLockedUntil = 0;
+          clearEntryLockState();
           try { sessionStorage.setItem('studioEntryUnlocked', '1'); } catch (_) {}
           entryPinInput.value = '';
           setEntryLockStatus('');
@@ -551,8 +581,10 @@
           if (state.entryAttempts >= 5) {
             state.entryLockedUntil = Date.now() + 30000;
             state.entryAttempts = 0;
+            saveEntryLockState();
             setEntryLockStatus('Too many wrong attempts. Locked for 30 seconds.');
           } else {
+            saveEntryLockState();
             setEntryLockStatus(`Wrong PIN. ${5 - state.entryAttempts} attempts left.`);
           }
         }
@@ -561,6 +593,11 @@
       function bootEntryGate() {
         let sessionUnlocked = false;
         try { sessionUnlocked = sessionStorage.getItem('studioEntryUnlocked') === '1'; } catch (_) {}
+        loadEntryLockState();
+
+        if (state.entryLockedUntil && Date.now() >= state.entryLockedUntil) {
+          clearEntryLockState();
+        }
 
         if (sessionUnlocked && isEntryPinConfigured()) {
           state.entryUnlocked = true;
@@ -1030,6 +1067,15 @@
         await fetch(GOOGLE_APPS_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: fd });
       }
 
+      async function parseJsonResponseSafe(res) {
+        const raw = await res.text();
+        try {
+          return raw ? JSON.parse(raw) : {};
+        } catch (_) {
+          throw new Error('Server returned invalid JSON response.');
+        }
+      }
+
       async function uploadCapture() {
         if (state.isUploading) return;
         if (!requireEntryUnlocked()) return;
@@ -1081,8 +1127,10 @@
 
           if (!done) {
             await uploadFallbackNoCors(payload);
-            done = true;
-            showToast('Upload request sent. Please verify in Drive.', 'success');
+            uploadProgressBar.style.width = '100%';
+            setStatus('Upload request sent (verification pending).');
+            showToast('Upload sent in fallback mode. Drive me manually verify karein.', 'error');
+            return;
           }
 
           if (done) {
@@ -1349,7 +1397,7 @@
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(finalPayload),
         });
-        const data = await res.json();
+        const data = await parseJsonResponseSafe(res);
         if (!res.ok || !data || data.success !== true) {
           throw new Error((data && data.error) || 'Call sync request failed.');
         }
@@ -1372,7 +1420,7 @@
           sessionId: state.sessionId,
         }));
         const res = await fetch(`${GOOGLE_APPS_SCRIPT_URL}?${q.toString()}`, { method: 'GET' });
-        const data = await res.json();
+        const data = await parseJsonResponseSafe(res);
         if (!res.ok || !data || data.success !== true) {
           throw new Error((data && data.error) || 'Call sync fetch failed.');
         }
@@ -1402,6 +1450,9 @@
 
           await createOffer(false);
           const offerPayload = JSON.parse(outgoingSignal.value || '{}');
+          if (offerPayload.type !== 'offer' || !offerPayload.sdp) {
+            throw new Error('Offer generate nahi hua. Camera/mic permission check karke retry karein.');
+          }
           await callApiPost('callSignalSave', {
             roomCode: room.roomCode,
             roomPin: room.roomPin,
@@ -1469,6 +1520,9 @@
                 if (sig.type === 'offer') {
                   await createAnswer();
                   const answerPayload = JSON.parse(outgoingSignal.value || '{}');
+                  if (answerPayload.type !== 'answer' || !answerPayload.sdp) {
+                    throw new Error('Answer generate nahi hua. Incoming signal ya permission check karein.');
+                  }
                   await callApiPost('callSignalSave', {
                     roomCode: room.roomCode,
                     roomPin: room.roomPin,
@@ -1510,7 +1564,7 @@
             sessionId: state.sessionId,
           });
           const res = await fetch(`${GOOGLE_APPS_SCRIPT_URL}?${qs.toString()}`, { method: 'GET' });
-          const data = await res.json();
+          const data = await parseJsonResponseSafe(res);
           if (!data || data.success !== true || !data.stats) throw new Error(data && data.error ? data.error : 'Stats unavailable');
 
           statTotal.textContent = String(data.stats.totalUploads || 0);
